@@ -6,7 +6,6 @@ import { WorkoutCard } from "@/components/fitness/workout-card"
 import { ProgrammeCard } from "@/components/fitness/programme-card"
 import { StatCard } from "@/components/fitness/stat-card"
 import { FilterChips } from "@/components/fitness/filter-chips"
-import { BottomNav } from "@/components/fitness/bottom-nav"
 
 const workoutCategories = ["All", "Strength", "HIIT", "Cardio", "Mobility"]
 
@@ -43,8 +42,11 @@ const recentActivity = [
   { name: "Full Body Strength", date: "Mar 24", duration: "48 min" },
 ]
 
-export function DashboardScreen() {
-  const [activeTab, setActiveTab] = useState("home")
+interface DashboardScreenProps {
+  onNavigateToWorkouts?: () => void
+}
+
+export function DashboardScreen({ onNavigateToWorkouts }: DashboardScreenProps) {
   const [selectedCategory, setSelectedCategory] = useState("All")
 
   const filteredWorkouts = selectedCategory === "All" 
@@ -140,7 +142,7 @@ export function DashboardScreen() {
           <h2 className="font-[family-name:var(--font-display)] text-lg font-bold uppercase text-foreground">
             Featured Workouts
           </h2>
-          <button className="text-sm font-medium text-primary">View All</button>
+          <button onClick={onNavigateToWorkouts} className="text-sm font-medium text-primary">View All</button>
         </div>
         
         <div className="mt-3 px-6">
@@ -213,8 +215,6 @@ export function DashboardScreen() {
         </div>
       </section>
 
-      {/* Bottom Navigation */}
-      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
   )
 }
