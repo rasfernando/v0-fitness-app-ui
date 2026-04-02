@@ -319,9 +319,9 @@ function AddSheet({
       : selectedExercise?.name ?? "Configure Exercise"
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col">
+    <div className="fixed inset-0 z-40 flex flex-col pb-20">
       <div className="flex-1 bg-background/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="max-h-[85vh] overflow-y-auto rounded-t-2xl bg-card shadow-xl scrollbar-hide">
+      <div className="max-h-[85vh] overflow-y-auto rounded-t-2xl bg-card shadow-2xl scrollbar-hide safe-area-pb">
         {/* Handle */}
         <div className="flex justify-center pt-3">
           <div className="h-1 w-10 rounded-full bg-border" />

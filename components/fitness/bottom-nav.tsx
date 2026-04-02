@@ -21,7 +21,7 @@ interface BottomNavProps {
 const CLIENT_NAV_ITEMS: NavItem[] = [
   { id: "home", label: "Home", icon: Home, isCenter: false },
   { id: "workouts", label: "Workouts", icon: Dumbbell, isCenter: false },
-  { id: "build", label: "Build", icon: PenTool, isCenter: true },
+  { id: "build", label: "Clients", icon: Users, isCenter: true },
   { id: "progress", label: "Progress", icon: TrendingUp, isCenter: false },
   { id: "profile", label: "Profile", icon: User, isCenter: false },
 ]
@@ -104,3 +104,4 @@ export function BottomNav({ activeTab, onTabChange, ptMode = false }: BottomNavP
     </nav>
   )
 }
+
