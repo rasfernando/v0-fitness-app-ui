@@ -59,6 +59,7 @@ interface DashboardScreenProps {
 }
 
 export function DashboardScreen({ onNavigateToWorkouts }: DashboardScreenProps) {
+  // v3 — no ProgrammeCard, uses nextWorkout
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [showCalendar, setShowCalendar] = useState(false)
   const [activityTab, setActivityTab] = useState<"upcoming" | "recent">("upcoming")
@@ -76,7 +77,9 @@ export function DashboardScreen({ onNavigateToWorkouts }: DashboardScreenProps) 
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(0, 3)
 
-  const todayWorkout = scheduledWorkouts.find(w => w.date === todayStr && w.status === "scheduled")
+  const nextWorkout = scheduledWorkouts
+    .filter(w => w.status === "scheduled" && w.date >= todayStr)
+    .sort((a, b) => a.date.localeCompare(b.date))[0] ?? null
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr + "T00:00:00")
@@ -113,39 +116,6 @@ export function DashboardScreen({ onNavigateToWorkouts }: DashboardScreenProps) 
         </div>
       </header>
 
-      {/* Today's Scheduled Workout - Priority CTA */}
-      {todayWorkout && (
-        <section className="px-6 py-4">
-          <div className="overflow-hidden rounded-xl bg-gradient-to-br from-primary/30 via-primary/20 to-primary/5 ring-1 ring-primary/30">
-            <div className="p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-primary">
-                    Today&apos;s Workout
-                  </p>
-                  <h3 className="mt-1 font-[family-name:var(--font-display)] text-xl font-bold uppercase text-foreground">
-                    {todayWorkout.title}
-                  </h3>
-                  <div className="mt-2 flex items-center gap-3 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-4 w-4" />
-                      {todayWorkout.duration}
-                    </span>
-                    <span>{todayWorkout.category}</span>
-                  </div>
-                </div>
-                <button className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105">
-                  <Play className="h-6 w-6 ml-1" />
-                </button>
-              </div>
-              <p className="mt-3 text-xs text-muted-foreground">
-                Scheduled by Coach Marcus
-              </p>
-            </div>
-          </div>
-        </section>
-      )}
-
       {/* Quick Stats */}
       <section className="px-6 py-4">
         <div className="grid grid-cols-2 gap-3">
@@ -176,6 +146,49 @@ export function DashboardScreen({ onNavigateToWorkouts }: DashboardScreenProps) 
             trend={{ value: "8%", positive: true }}
           />
         </div>
+      </section>
+
+      {/* Next Workout CTA */}
+      <section className="px-6 pb-2 pt-4">
+        {nextWorkout ? (
+          <button className="group w-full overflow-hidden rounded-2xl bg-card ring-1 ring-border transition-all hover:ring-primary/50">
+            <div className="flex items-center gap-4 p-4">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-primary">
+                <Play className="ml-1 h-7 w-7 text-primary-foreground" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+                  {nextWorkout.date === todayStr ? "Start Now" : `Up Next — ${formatDate(nextWorkout.date)}`}
+                </p>
+                <h3 className="font-[family-name:var(--font-display)] text-lg font-bold uppercase text-foreground">
+                  {nextWorkout.title}
+                </h3>
+                <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3.5 w-3.5" />
+                    {nextWorkout.duration}
+                  </span>
+                  <span>{nextWorkout.category}</span>
+                </div>
+              </div>
+              <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+            </div>
+            <div className="h-0.5 bg-secondary">
+              <div className="h-full w-1/3 bg-primary transition-all group-hover:w-1/2" />
+            </div>
+          </button>
+        ) : (
+          <div className="flex items-center gap-4 rounded-2xl bg-card p-4 ring-1 ring-border">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-secondary">
+              <Dumbbell className="h-7 w-7 text-muted-foreground" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">No workouts scheduled</p>
+              <h3 className="font-[family-name:var(--font-display)] text-lg font-bold uppercase text-foreground">Rest Day</h3>
+              <p className="text-sm text-muted-foreground">Your coach will schedule your next session</p>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Activity Panel - Upcoming/Recent Toggle */}
@@ -272,30 +285,6 @@ export function DashboardScreen({ onNavigateToWorkouts }: DashboardScreenProps) 
             ))
           )}
         </div>
-      </section>
-
-      {/* Continue Program Banner */}
-      <section className="px-6 py-4">
-        <button className="w-full overflow-hidden rounded-xl bg-gradient-to-r from-primary/20 via-primary/10 to-transparent">
-          <div className="flex items-center gap-4 p-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary">
-              <Dumbbell className="h-7 w-7 text-primary-foreground" />
-            </div>
-            <div className="flex-1 text-left">
-              <p className="text-xs font-medium uppercase tracking-wider text-primary">
-                Stay Active
-              </p>
-              <h3 className="font-[family-name:var(--font-display)] text-lg font-bold uppercase text-foreground">
-                Consistency is Key
-              </h3>
-              <p className="text-sm text-muted-foreground">Keep your momentum going strong</p>
-            </div>
-            <ChevronRight className="h-5 w-5 text-muted-foreground" />
-          </div>
-          <div className="h-1 bg-secondary">
-            <div className="h-full w-[33%] rounded-full bg-primary" />
-          </div>
-        </button>
       </section>
 
       {/* Featured Workouts */}

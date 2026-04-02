@@ -10,6 +10,7 @@ interface WelcomeScreenProps {
 }
 
 export function WelcomeScreen({ onGetStarted, onSignIn }: WelcomeScreenProps) {
+  // v3 — no ProgrammeCard
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
