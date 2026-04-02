@@ -1,6 +1,7 @@
 "use client"
 
-import { Home, Dumbbell, Plus, TrendingUp, User } from "lucide-react"
+// Icons: Home, Dumbbell, Users, TrendingUp, User
+import { Home, Dumbbell, Users, TrendingUp, User } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface BottomNavProps {
@@ -11,7 +12,7 @@ interface BottomNavProps {
 const navItems = [
   { id: "home", label: "Home", icon: Home },
   { id: "workouts", label: "Workouts", icon: Dumbbell },
-  { id: "build", label: "Build", icon: Plus, isCenter: true },
+  { id: "build", label: "Clients", icon: Users, isCenter: true },
   { id: "progress", label: "Progress", icon: TrendingUp },
   { id: "profile", label: "Profile", icon: User },
 ]

@@ -7,6 +7,7 @@ import { DashboardScreen } from "@/components/fitness/screens/dashboard-screen"
 import { WorkoutLibraryScreen, type Workout } from "@/components/fitness/screens/workout-library-screen"
 import { WorkoutDetailScreen, exerciseData } from "@/components/fitness/screens/workout-detail-screen"
 import { WorkoutPlayerScreen } from "@/components/fitness/screens/workout-player-screen"
+import { PTCoachScreen } from "@/components/fitness/screens/pt-coach-screen"
 import { BottomNav } from "@/components/fitness/bottom-nav"
 
 type Screen = "welcome" | "signin" | "signup" | "dashboard" | "workouts" | "workout-detail" | "workout-player" | "build" | "progress" | "profile"
@@ -117,17 +118,7 @@ export default function FitnessApp() {
       )}
 
       {currentScreen === "build" && (
-        <div className="flex min-h-screen flex-col items-center justify-center px-6 pb-24 text-center">
-          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/20">
-            <span className="text-3xl text-primary">+</span>
-          </div>
-          <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold uppercase text-foreground">
-            Build Your Own
-          </h1>
-          <p className="mt-2 text-muted-foreground">
-            Custom workout builder coming soon
-          </p>
-        </div>
+        <PTCoachScreen />
       )}
 
       {currentScreen === "progress" && (
