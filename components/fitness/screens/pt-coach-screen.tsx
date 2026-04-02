@@ -655,7 +655,7 @@ export function PTCoachScreen() {
   return (
     <div className="flex min-h-screen flex-col bg-background pb-24">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/95 px-4 pb-4 pt-6 backdrop-blur-sm">
+      <div className="sticky top-0 z-10 bg-background/95 px-4 pb-4 pt-3 backdrop-blur-sm">
         <div className="flex items-start justify-between">
           <div>
             <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold uppercase tracking-tight text-foreground">

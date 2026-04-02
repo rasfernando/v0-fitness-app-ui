@@ -9,16 +9,64 @@ import { WorkoutDetailScreen, exerciseData } from "@/components/fitness/screens/
 import { WorkoutPlayerScreen } from "@/components/fitness/screens/workout-player-screen"
 import { PTCoachScreen } from "@/components/fitness/screens/pt-coach-screen"
 import { BottomNav } from "@/components/fitness/bottom-nav"
+import { cn } from "@/lib/utils"
 
 type Screen = "welcome" | "signin" | "signup" | "dashboard" | "workouts" | "workout-detail" | "workout-player" | "build" | "progress" | "profile"
 type NavTab = "home" | "workouts" | "build" | "progress" | "profile"
+type AppMode = "client" | "pt"
+
+function ModeToggle({ mode, onChange }: { mode: AppMode; onChange: (m: AppMode) => void }) {
+  return (
+    <div className="sticky top-0 z-50 flex items-center justify-center bg-background px-4 pb-3 pt-4">
+      <div className="flex w-full max-w-xs rounded-xl bg-secondary p-1">
+        <button
+          onClick={() => onChange("client")}
+          className={cn(
+            "flex-1 rounded-lg py-2 text-sm font-semibold uppercase tracking-wide transition-all",
+            mode === "client"
+              ? "bg-foreground text-background shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          Client View
+        </button>
+        <button
+          onClick={() => onChange("pt")}
+          className={cn(
+            "flex-1 rounded-lg py-2 text-sm font-semibold uppercase tracking-wide transition-all",
+            mode === "pt"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          PT View
+        </button>
+      </div>
+    </div>
+  )
+}
 
 export default function FitnessApp() {
+  const [appMode, setAppMode] = useState<AppMode>("client")
   const [currentScreen, setCurrentScreen] = useState<Screen>("welcome")
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null)
   const [activeTab, setActiveTab] = useState<NavTab>("home")
 
-  const handleAuthSubmit = (data: { email: string; password: string; name?: string }) => {
+  const isAuthed = !["welcome", "signin", "signup"].includes(currentScreen)
+
+  const handleModeChange = (mode: AppMode) => {
+    setAppMode(mode)
+    // Reset to the appropriate home screen when switching modes
+    if (mode === "pt") {
+      setCurrentScreen("build")
+      setActiveTab("build")
+    } else {
+      setCurrentScreen("dashboard")
+      setActiveTab("home")
+    }
+  }
+
+  const handleAuthSubmit = (_data: { email: string; password: string; name?: string }) => {
     setCurrentScreen("dashboard")
     setActiveTab("home")
   }
@@ -65,15 +113,32 @@ export default function FitnessApp() {
 
   const showBottomNav = ["dashboard", "workouts", "build", "progress", "profile"].includes(currentScreen)
 
+  // ── PT Mode ──────────────────────────────────────────────────────────────────
+  if (appMode === "pt") {
+    return (
+      <main className="mx-auto min-h-screen max-w-md bg-background">
+        <ModeToggle mode={appMode} onChange={handleModeChange} />
+        <div className="pb-24">
+          <PTCoachScreen />
+        </div>
+        <BottomNav activeTab="build" onTabChange={() => {}} ptMode />
+      </main>
+    )
+  }
+
+  // ── Client Mode ───────────────────────────────────────────────────────────────
   return (
     <main className="mx-auto min-h-screen max-w-md bg-background">
+      {/* Toggle only shown when authed */}
+      {isAuthed && <ModeToggle mode={appMode} onChange={handleModeChange} />}
+
       {currentScreen === "welcome" && (
         <WelcomeScreen
           onGetStarted={() => setCurrentScreen("signup")}
           onSignIn={() => setCurrentScreen("signin")}
         />
       )}
-      
+
       {currentScreen === "signin" && (
         <AuthScreen
           mode="signin"
@@ -82,7 +147,7 @@ export default function FitnessApp() {
           onToggleMode={() => setCurrentScreen("signup")}
         />
       )}
-      
+
       {currentScreen === "signup" && (
         <AuthScreen
           mode="signup"
@@ -91,7 +156,7 @@ export default function FitnessApp() {
           onToggleMode={() => setCurrentScreen("signin")}
         />
       )}
-      
+
       {currentScreen === "dashboard" && (
         <DashboardScreen onNavigateToWorkouts={() => handleNavigation("workouts")} />
       )}
@@ -118,26 +183,32 @@ export default function FitnessApp() {
       )}
 
       {currentScreen === "build" && (
-        <PTCoachScreen />
+        <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 pb-24 text-center">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/20">
+            <span className="font-[family-name:var(--font-display)] text-3xl font-bold text-primary">+</span>
+          </div>
+          <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold uppercase text-foreground">
+            Build Your Own
+          </h1>
+          <p className="mt-2 text-muted-foreground">Custom workout builder coming soon</p>
+        </div>
       )}
 
       {currentScreen === "progress" && (
-        <div className="flex min-h-screen flex-col items-center justify-center px-6 pb-24 text-center">
+        <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 pb-24 text-center">
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/20">
-            <span className="text-2xl">📊</span>
+            <span className="font-[family-name:var(--font-display)] text-3xl font-bold text-primary">%</span>
           </div>
           <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold uppercase text-foreground">
             Your Progress
           </h1>
-          <p className="mt-2 text-muted-foreground">
-            Detailed analytics coming soon
-          </p>
+          <p className="mt-2 text-muted-foreground">Detailed analytics coming soon</p>
         </div>
       )}
 
       {currentScreen === "profile" && (
-        <div className="flex min-h-screen flex-col items-center justify-center px-6 pb-24 text-center">
-          <div className="mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-primary/20">
+        <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 pb-24 text-center">
+          <div className="mb-4 h-20 w-20 overflow-hidden rounded-full ring-2 ring-primary">
             <img
               src="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=200&q=80"
               alt="Profile"
@@ -147,17 +218,12 @@ export default function FitnessApp() {
           <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold uppercase text-foreground">
             Alex Johnson
           </h1>
-          <p className="mt-1 text-muted-foreground">
-            Member since March 2026
-          </p>
+          <p className="mt-1 text-muted-foreground">Member since March 2026</p>
         </div>
       )}
 
       {showBottomNav && (
-        <BottomNav
-          activeTab={activeTab}
-          onTabChange={handleNavigation}
-        />
+        <BottomNav activeTab={activeTab} onTabChange={handleNavigation} />
       )}
     </main>
   )
