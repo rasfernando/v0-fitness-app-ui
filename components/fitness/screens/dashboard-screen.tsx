@@ -1,9 +1,9 @@
 "use client"
 
+// Dashboard screen - fitness app
 import { useState } from "react"
 import { Bell, Flame, Timer, Trophy, TrendingUp, Calendar, ChevronRight, Dumbbell, Clock, Play } from "lucide-react"
 import { WorkoutCard } from "@/components/fitness/workout-card"
-import { ProgrammeCard } from "@/components/fitness/programme-card"
 import { StatCard } from "@/components/fitness/stat-card"
 import { FilterChips } from "@/components/fitness/filter-chips"
 import { WorkoutCalendar } from "@/components/fitness/workout-calendar"
@@ -236,16 +236,16 @@ export function DashboardScreen({ onNavigateToWorkouts }: DashboardScreenProps) 
         <button className="w-full overflow-hidden rounded-xl bg-gradient-to-r from-primary/20 via-primary/10 to-transparent">
           <div className="flex items-center gap-4 p-4">
             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary">
-              <Calendar className="h-7 w-7 text-primary-foreground" />
+              <Dumbbell className="h-7 w-7 text-primary-foreground" />
             </div>
             <div className="flex-1 text-left">
               <p className="text-xs font-medium uppercase tracking-wider text-primary">
-                Week 4 of 12
+                Stay Active
               </p>
               <h3 className="font-[family-name:var(--font-display)] text-lg font-bold uppercase text-foreground">
-                12-Week Shred
+                Consistency is Key
               </h3>
-              <p className="text-sm text-muted-foreground">Day 3: Upper Body Push</p>
+              <p className="text-sm text-muted-foreground">Keep your momentum going strong</p>
             </div>
             <ChevronRight className="h-5 w-5 text-muted-foreground" />
           </div>
@@ -287,20 +287,22 @@ export function DashboardScreen({ onNavigateToWorkouts }: DashboardScreenProps) 
       <section className="px-6 py-4">
         <div className="flex items-center justify-between">
           <h2 className="font-[family-name:var(--font-display)] text-lg font-bold uppercase text-foreground">
-            Featured Plans
+            Browse Workouts
           </h2>
           <button className="text-sm font-medium text-primary">View All</button>
         </div>
         
-        <div className="mt-4 space-y-4">
-          <ProgrammeCard
-            title="Lean Muscle Builder"
-            description="Progressive hypertrophy program designed for maximum muscle growth with optimal recovery."
-            weeks={10}
-            workoutsPerWeek={5}
-            imageUrl="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&auto=format&fit=crop&q=80"
-            tag="New"
-          />
+        <div className="mt-4 space-y-3">
+          <div className="flex items-center gap-4 rounded-xl bg-card p-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+              <Dumbbell className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h4 className="font-semibold text-foreground">Beginner-Friendly Workouts</h4>
+              <p className="text-sm text-muted-foreground">Start your fitness journey</p>
+            </div>
+            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          </div>
         </div>
       </section>
 

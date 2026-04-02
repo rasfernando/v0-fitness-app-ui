@@ -1,8 +1,8 @@
 "use client"
 
+// Welcome screen - fitness app
 import { Play, Star, Users, Award } from "lucide-react"
 import { CTAButton } from "@/components/fitness/cta-button"
-import { ProgrammeCard } from "@/components/fitness/programme-card"
 
 interface WelcomeScreenProps {
   onGetStarted: () => void
@@ -96,33 +96,59 @@ export function WelcomeScreen({ onGetStarted, onSignIn }: WelcomeScreenProps) {
         </div>
       </section>
       
-      {/* Featured Programs */}
+      {/* Featured Workouts */}
       <section className="px-6 py-8">
         <div className="flex items-center justify-between">
           <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase text-foreground">
-            Featured Programmes
+            Featured Workouts
           </h2>
           <button className="text-sm font-medium text-primary">View All</button>
         </div>
         
         <div className="mt-6 space-y-4">
-          <ProgrammeCard
-            title="12-Week Shred"
-            description="Intense fat-burning program combining HIIT and strength training for maximum results."
-            weeks={12}
-            workoutsPerWeek={5}
-            imageUrl="https://images.unsplash.com/photo-1549060279-7e168fcee0c2?w=600&auto=format&fit=crop&q=80"
-            tag="Popular"
-          />
+          <div className="group relative overflow-hidden rounded-xl bg-card transition-transform hover:scale-105">
+            <img
+              src="https://images.unsplash.com/photo-1549060279-7e168fcee0c2?w=600&auto=format&fit=crop&q=80"
+              alt="HIIT Burn"
+              className="h-48 w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+            <div className="absolute inset-0 flex flex-col justify-between p-4">
+              <div className="text-right">
+                <span className="rounded-full bg-primary/20 px-2 py-1 text-xs font-semibold uppercase text-primary">
+                  Advanced
+                </span>
+              </div>
+              <div>
+                <h3 className="font-[family-name:var(--font-display)] text-lg font-bold uppercase text-foreground">
+                  HIIT Burn
+                </h3>
+                <p className="text-sm text-muted-foreground">30 min • 450 cal</p>
+              </div>
+            </div>
+          </div>
           
-          <ProgrammeCard
-            title="Strength Foundations"
-            description="Build a solid base with fundamental compound movements and progressive overload."
-            weeks={8}
-            workoutsPerWeek={4}
-            imageUrl="https://images.unsplash.com/photo-1581009146145-b5ef050c149a?w=600&auto=format&fit=crop&q=80"
-            tag="Beginner"
-          />
+          <div className="group relative overflow-hidden rounded-xl bg-card transition-transform hover:scale-105">
+            <img
+              src="https://images.unsplash.com/photo-1581009146145-b5ef050c149a?w=600&auto=format&fit=crop&q=80"
+              alt="Strength Foundations"
+              className="h-48 w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+            <div className="absolute inset-0 flex flex-col justify-between p-4">
+              <div className="text-right">
+                <span className="rounded-full bg-primary/20 px-2 py-1 text-xs font-semibold uppercase text-primary">
+                  Beginner
+                </span>
+              </div>
+              <div>
+                <h3 className="font-[family-name:var(--font-display)] text-lg font-bold uppercase text-foreground">
+                  Strength Foundations
+                </h3>
+                <p className="text-sm text-muted-foreground">45 min • 320 cal</p>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
       
