@@ -1,5 +1,11 @@
 "use client"
 
+/**
+ * Bottom Navigation Component
+ * Provides tab-based navigation for the fitness app
+ * Supports both Client and PT modes with different nav items
+ */
+
 import { Home, Dumbbell, Users, TrendingUp, User, PenTool } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -104,4 +110,3 @@ export function BottomNav({ activeTab, onTabChange, ptMode = false }: BottomNavP
     </nav>
   )
 }
-

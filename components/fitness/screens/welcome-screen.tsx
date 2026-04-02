@@ -1,6 +1,6 @@
 "use client"
 
-// Welcome screen - fitness app
+// Welcome screen - fitness app (v2)
 import { Play, Star, Users, Award } from "lucide-react"
 import { CTAButton } from "@/components/fitness/cta-button"
 

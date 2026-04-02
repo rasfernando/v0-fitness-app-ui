@@ -1,6 +1,6 @@
 "use client"
 
-// Dashboard screen - fitness app
+// Dashboard screen - fitness app (v2)
 import { useState } from "react"
 import { Bell, Flame, Timer, Trophy, TrendingUp, Calendar, ChevronRight, Dumbbell, Clock, Play } from "lucide-react"
 import { WorkoutCard } from "@/components/fitness/workout-card"
@@ -61,6 +61,7 @@ interface DashboardScreenProps {
 export function DashboardScreen({ onNavigateToWorkouts }: DashboardScreenProps) {
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [showCalendar, setShowCalendar] = useState(false)
+  const [activityTab, setActivityTab] = useState<"upcoming" | "recent">("upcoming")
 
   const filteredWorkouts = selectedCategory === "All" 
     ? featuredWorkouts 
@@ -177,12 +178,34 @@ export function DashboardScreen({ onNavigateToWorkouts }: DashboardScreenProps) 
         </div>
       </section>
 
-      {/* Upcoming Scheduled Workouts */}
+      {/* Activity Panel - Upcoming/Recent Toggle */}
       <section className="py-4">
         <div className="flex items-center justify-between px-6">
-          <h2 className="font-[family-name:var(--font-display)] text-lg font-bold uppercase text-foreground">
-            Upcoming Schedule
-          </h2>
+          {/* Toggle */}
+          <div className="flex rounded-lg bg-secondary p-1">
+            <button
+              onClick={() => setActivityTab("upcoming")}
+              className={cn(
+                "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                activityTab === "upcoming"
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Upcoming
+            </button>
+            <button
+              onClick={() => setActivityTab("recent")}
+              className={cn(
+                "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                activityTab === "recent"
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Recent
+            </button>
+          </div>
           <button 
             onClick={() => setShowCalendar(true)}
             className="flex items-center gap-1 text-sm font-medium text-primary"
@@ -193,40 +216,60 @@ export function DashboardScreen({ onNavigateToWorkouts }: DashboardScreenProps) 
         </div>
         
         <div className="mt-4 space-y-3 px-6">
-          {upcomingWorkouts.length > 0 ? (
-            upcomingWorkouts.map((workout) => (
+          {activityTab === "upcoming" ? (
+            upcomingWorkouts.length > 0 ? (
+              upcomingWorkouts.map((workout) => (
+                <button
+                  key={workout.id}
+                  className="flex w-full items-center gap-4 rounded-xl bg-card p-4 text-left transition-colors hover:bg-secondary"
+                >
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                    <Dumbbell className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className={cn(
+                        "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase",
+                        workout.date === todayStr 
+                          ? "bg-primary/20 text-primary" 
+                          : "bg-secondary text-muted-foreground"
+                      )}>
+                        {formatDate(workout.date)}
+                      </span>
+                    </div>
+                    <h4 className="mt-1 font-semibold text-foreground">{workout.title}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {workout.category} · {workout.duration}
+                    </p>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                </button>
+              ))
+            ) : (
+              <div className="flex flex-col items-center py-8 text-center">
+                <Calendar className="h-10 w-10 text-muted-foreground" />
+                <p className="mt-2 text-sm text-muted-foreground">No upcoming workouts scheduled</p>
+                <p className="text-xs text-muted-foreground">Your coach will assign workouts to your calendar</p>
+              </div>
+            )
+          ) : (
+            recentActivity.map((activity, index) => (
               <button
-                key={workout.id}
-                className="flex w-full items-center gap-4 rounded-xl bg-card p-4 text-left transition-colors hover:bg-secondary"
+                key={index}
+                className="flex w-full items-center gap-4 rounded-xl bg-card p-4 transition-colors hover:bg-secondary"
               >
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                  <Dumbbell className="h-6 w-6 text-primary" />
+                  <Flame className="h-6 w-6 text-primary" />
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className={cn(
-                      "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase",
-                      workout.date === todayStr 
-                        ? "bg-primary/20 text-primary" 
-                        : "bg-secondary text-muted-foreground"
-                    )}>
-                      {formatDate(workout.date)}
-                    </span>
-                  </div>
-                  <h4 className="mt-1 font-semibold text-foreground">{workout.title}</h4>
+                <div className="flex-1 text-left">
+                  <h4 className="font-semibold text-foreground">{activity.name}</h4>
                   <p className="text-sm text-muted-foreground">
-                    {workout.category} · {workout.duration}
+                    {activity.date} · {activity.duration}
                   </p>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </button>
             ))
-          ) : (
-            <div className="flex flex-col items-center py-8 text-center">
-              <Calendar className="h-10 w-10 text-muted-foreground" />
-              <p className="mt-2 text-sm text-muted-foreground">No upcoming workouts scheduled</p>
-              <p className="text-xs text-muted-foreground">Your coach will assign workouts to your calendar</p>
-            </div>
           )}
         </div>
       </section>
@@ -306,35 +349,7 @@ export function DashboardScreen({ onNavigateToWorkouts }: DashboardScreenProps) 
         </div>
       </section>
 
-      {/* Recent Activity */}
-      <section className="px-6 py-4">
-        <div className="flex items-center justify-between">
-          <h2 className="font-[family-name:var(--font-display)] text-lg font-bold uppercase text-foreground">
-            Recent Activity
-          </h2>
-          <button className="text-sm font-medium text-primary">View All</button>
-        </div>
-        
-        <div className="mt-4 space-y-3">
-          {recentActivity.map((activity, index) => (
-            <button
-              key={index}
-              className="flex w-full items-center gap-4 rounded-xl bg-card p-4 transition-colors hover:bg-secondary"
-            >
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                <Flame className="h-6 w-6 text-primary" />
-              </div>
-              <div className="flex-1 text-left">
-                <h4 className="font-semibold text-foreground">{activity.name}</h4>
-                <p className="text-sm text-muted-foreground">
-                  {activity.date} • {activity.duration}
-                </p>
-              </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
-            </button>
-          ))}
-        </div>
-      </section>
+
 
       {/* Calendar Modal */}
       {showCalendar && (
