@@ -1,11 +1,5 @@
 "use client"
 
-/**
- * Bottom Navigation Component
- * Last updated: 2026-04-02T12:00:00Z
- * Icons: Home, Dumbbell, Users, TrendingUp, User, PenTool
- */
-
 import {
   Home,
   Dumbbell,

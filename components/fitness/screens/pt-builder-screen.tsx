@@ -23,8 +23,10 @@ interface Exercise {
   name: string
   sets: number
   reps: string
+  weight?: string
   rest: string
   image?: string
+  category?: string
 }
 
 interface CreatedWorkout {
@@ -80,9 +82,9 @@ export function PTBuilderScreen() {
       duration: 45,
       calories: 400,
       exercises: [
-        { id: "1", name: "Barbell Squat", sets: 4, reps: "8-10", rest: "90s" },
-        { id: "2", name: "Bench Press", sets: 4, reps: "8-10", rest: "90s" },
-        { id: "3", name: "Deadlift", sets: 3, reps: "6-8", rest: "120s" },
+        { id: "1", name: "Barbell Squat", sets: 4, reps: "8-10", weight: "60kg", rest: "90s", category: "Legs" },
+        { id: "2", name: "Bench Press", sets: 4, reps: "8-10", weight: "40kg", rest: "90s", category: "Chest" },
+        { id: "3", name: "Deadlift", sets: 3, reps: "6-8", weight: "80kg", rest: "120s", category: "Back" },
       ],
       createdAt: new Date()
     }
@@ -132,8 +134,10 @@ export function PTBuilderScreen() {
       name: exercise.name,
       sets: 3,
       reps: "10",
+      weight: "",
       rest: "60s",
-      image: exercise.image
+      image: exercise.image,
+      category: exercise.category
     }
     setNewWorkout(prev => ({
       ...prev,
@@ -509,7 +513,12 @@ export function PTBuilderScreen() {
                       <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">
                         {index + 1}
                       </span>
-                      <span className="flex-1 font-medium text-foreground">{exercise.name}</span>
+                      <div className="flex-1">
+                        <span className="font-medium text-foreground">{exercise.name}</span>
+                        {exercise.category && (
+                          <span className="ml-2 text-xs text-muted-foreground">{exercise.category}</span>
+                        )}
+                      </div>
                       <button
                         onClick={() => handleRemoveExercise(exercise.id)}
                         className="rounded p-1 text-muted-foreground hover:text-destructive"
@@ -517,7 +526,7 @@ export function PTBuilderScreen() {
                         <X className="h-4 w-4" />
                       </button>
                     </div>
-                    <div className="ml-[52px] grid grid-cols-3 gap-2">
+                    <div className="ml-[52px] grid grid-cols-4 gap-2">
                       <div>
                         <label className="mb-1 block text-xs text-muted-foreground">Sets</label>
                         <input
@@ -533,7 +542,18 @@ export function PTBuilderScreen() {
                           type="text"
                           value={exercise.reps}
                           onChange={(e) => handleUpdateExercise(exercise.id, "reps", e.target.value)}
-                          className="w-full rounded-lg border border-border bg-input px-2 py-1.5 text-sm text-foreground"
+                          placeholder="10"
+                          className="w-full rounded-lg border border-border bg-input px-2 py-1.5 text-sm text-foreground placeholder:text-muted-foreground/50"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs text-muted-foreground">Weight</label>
+                        <input
+                          type="text"
+                          value={exercise.weight || ""}
+                          onChange={(e) => handleUpdateExercise(exercise.id, "weight", e.target.value)}
+                          placeholder="kg/lbs"
+                          className="w-full rounded-lg border border-border bg-input px-2 py-1.5 text-sm text-foreground placeholder:text-muted-foreground/50"
                         />
                       </div>
                       <div>
@@ -542,7 +562,8 @@ export function PTBuilderScreen() {
                           type="text"
                           value={exercise.rest}
                           onChange={(e) => handleUpdateExercise(exercise.id, "rest", e.target.value)}
-                          className="w-full rounded-lg border border-border bg-input px-2 py-1.5 text-sm text-foreground"
+                          placeholder="60s"
+                          className="w-full rounded-lg border border-border bg-input px-2 py-1.5 text-sm text-foreground placeholder:text-muted-foreground/50"
                         />
                       </div>
                     </div>
