@@ -5,6 +5,7 @@ export { StatCard } from "./stat-card"
 export { FilterChips } from "./filter-chips"
 export { CTAButton } from "./cta-button"
 export { BottomNav } from "./bottom-nav"
+export { WorkoutCalendar } from "./workout-calendar"
 
 // Screen Components
 export { WelcomeScreen } from "./screens/welcome-screen"

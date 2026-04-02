@@ -1,11 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { Bell, Flame, Timer, Trophy, TrendingUp, Calendar, ChevronRight } from "lucide-react"
+import { Bell, Flame, Timer, Trophy, TrendingUp, Calendar, ChevronRight, Dumbbell, Clock, Play } from "lucide-react"
 import { WorkoutCard } from "@/components/fitness/workout-card"
 import { ProgrammeCard } from "@/components/fitness/programme-card"
 import { StatCard } from "@/components/fitness/stat-card"
 import { FilterChips } from "@/components/fitness/filter-chips"
+import { WorkoutCalendar } from "@/components/fitness/workout-calendar"
+import { cn } from "@/lib/utils"
 
 const workoutCategories = ["All", "Strength", "HIIT", "Cardio", "Mobility"]
 
@@ -36,6 +38,16 @@ const featuredWorkouts = [
   },
 ]
 
+// Scheduled workouts from PT
+const scheduledWorkouts = [
+  { id: "sw1", workoutId: "w1", title: "Full Body Burn", category: "Strength", duration: "45 min", date: "2026-04-03", status: "scheduled" as const },
+  { id: "sw2", workoutId: "w2", title: "HIIT Cardio Blast", category: "Cardio", duration: "30 min", date: "2026-04-05", status: "scheduled" as const },
+  { id: "sw3", workoutId: "w3", title: "Core Crusher", category: "Core", duration: "20 min", date: "2026-04-01", status: "completed" as const },
+  { id: "sw4", workoutId: "w4", title: "Upper Body Power", category: "Strength", duration: "40 min", date: "2026-04-07", status: "scheduled" as const },
+  { id: "sw5", workoutId: "w5", title: "Leg Day Destroyer", category: "Strength", duration: "50 min", date: "2026-04-02", status: "completed" as const },
+  { id: "sw6", workoutId: "w6", title: "Morning Mobility", category: "Recovery", duration: "15 min", date: "2026-04-09", status: "scheduled" as const },
+]
+
 const recentActivity = [
   { name: "Leg Day Destroyer", date: "Today", duration: "52 min" },
   { name: "Morning Cardio", date: "Yesterday", duration: "30 min" },
@@ -48,10 +60,30 @@ interface DashboardScreenProps {
 
 export function DashboardScreen({ onNavigateToWorkouts }: DashboardScreenProps) {
   const [selectedCategory, setSelectedCategory] = useState("All")
+  const [showCalendar, setShowCalendar] = useState(false)
 
   const filteredWorkouts = selectedCategory === "All" 
     ? featuredWorkouts 
     : featuredWorkouts.filter(w => w.category === selectedCategory)
+
+  // Get upcoming scheduled workouts (next 7 days)
+  const today = new Date()
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`
+  
+  const upcomingWorkouts = scheduledWorkouts
+    .filter(w => w.status === "scheduled" && w.date >= todayStr)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(0, 3)
+
+  const todayWorkout = scheduledWorkouts.find(w => w.date === todayStr && w.status === "scheduled")
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr + "T00:00:00")
+    const daysDiff = Math.ceil((date.getTime() - new Date(todayStr + "T00:00:00").getTime()) / (1000 * 60 * 60 * 24))
+    if (daysDiff === 0) return "Today"
+    if (daysDiff === 1) return "Tomorrow"
+    return date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })
+  }
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -79,6 +111,39 @@ export function DashboardScreen({ onNavigateToWorkouts }: DashboardScreenProps) 
           </div>
         </div>
       </header>
+
+      {/* Today's Scheduled Workout - Priority CTA */}
+      {todayWorkout && (
+        <section className="px-6 py-4">
+          <div className="overflow-hidden rounded-xl bg-gradient-to-br from-primary/30 via-primary/20 to-primary/5 ring-1 ring-primary/30">
+            <div className="p-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+                    Today&apos;s Workout
+                  </p>
+                  <h3 className="mt-1 font-[family-name:var(--font-display)] text-xl font-bold uppercase text-foreground">
+                    {todayWorkout.title}
+                  </h3>
+                  <div className="mt-2 flex items-center gap-3 text-sm text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-4 w-4" />
+                      {todayWorkout.duration}
+                    </span>
+                    <span>{todayWorkout.category}</span>
+                  </div>
+                </div>
+                <button className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105">
+                  <Play className="h-6 w-6 ml-1" />
+                </button>
+              </div>
+              <p className="mt-3 text-xs text-muted-foreground">
+                Scheduled by Coach Marcus
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Quick Stats */}
       <section className="px-6 py-4">
@@ -109,6 +174,60 @@ export function DashboardScreen({ onNavigateToWorkouts }: DashboardScreenProps) 
             icon={TrendingUp}
             trend={{ value: "8%", positive: true }}
           />
+        </div>
+      </section>
+
+      {/* Upcoming Scheduled Workouts */}
+      <section className="py-4">
+        <div className="flex items-center justify-between px-6">
+          <h2 className="font-[family-name:var(--font-display)] text-lg font-bold uppercase text-foreground">
+            Upcoming Schedule
+          </h2>
+          <button 
+            onClick={() => setShowCalendar(true)}
+            className="flex items-center gap-1 text-sm font-medium text-primary"
+          >
+            <Calendar className="h-4 w-4" />
+            Calendar
+          </button>
+        </div>
+        
+        <div className="mt-4 space-y-3 px-6">
+          {upcomingWorkouts.length > 0 ? (
+            upcomingWorkouts.map((workout) => (
+              <button
+                key={workout.id}
+                className="flex w-full items-center gap-4 rounded-xl bg-card p-4 text-left transition-colors hover:bg-secondary"
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                  <Dumbbell className="h-6 w-6 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className={cn(
+                      "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase",
+                      workout.date === todayStr 
+                        ? "bg-primary/20 text-primary" 
+                        : "bg-secondary text-muted-foreground"
+                    )}>
+                      {formatDate(workout.date)}
+                    </span>
+                  </div>
+                  <h4 className="mt-1 font-semibold text-foreground">{workout.title}</h4>
+                  <p className="text-sm text-muted-foreground">
+                    {workout.category} · {workout.duration}
+                  </p>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </button>
+            ))
+          ) : (
+            <div className="flex flex-col items-center py-8 text-center">
+              <Calendar className="h-10 w-10 text-muted-foreground" />
+              <p className="mt-2 text-sm text-muted-foreground">No upcoming workouts scheduled</p>
+              <p className="text-xs text-muted-foreground">Your coach will assign workouts to your calendar</p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -214,6 +333,43 @@ export function DashboardScreen({ onNavigateToWorkouts }: DashboardScreenProps) 
           ))}
         </div>
       </section>
+
+      {/* Calendar Modal */}
+      {showCalendar && (
+        <div className="fixed inset-0 z-50 flex flex-col">
+          <div
+            className="flex-1 bg-background/60 backdrop-blur-sm"
+            onClick={() => setShowCalendar(false)}
+          />
+          <div className="max-h-[85vh] overflow-y-auto rounded-t-2xl bg-card shadow-xl">
+            <div className="sticky top-0 z-10 bg-card">
+              <div className="flex justify-center pt-3">
+                <div className="h-1 w-10 rounded-full bg-border" />
+              </div>
+              <div className="flex items-center justify-between px-5 pb-2 pt-4">
+                <div>
+                  <h3 className="font-[family-name:var(--font-display)] text-lg font-bold uppercase text-foreground">
+                    My Schedule
+                  </h3>
+                  <p className="text-xs text-muted-foreground">Workouts from Coach Marcus</p>
+                </div>
+                <button
+                  onClick={() => setShowCalendar(false)}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-muted-foreground hover:text-foreground"
+                >
+                  <ChevronRight className="h-4 w-4 rotate-90" />
+                </button>
+              </div>
+            </div>
+            <div className="pb-8">
+              <WorkoutCalendar
+                scheduledWorkouts={scheduledWorkouts}
+                readOnly
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   )
