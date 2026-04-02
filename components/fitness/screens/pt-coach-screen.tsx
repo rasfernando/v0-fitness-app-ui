@@ -15,19 +15,9 @@ import {
   CheckCircle2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { WorkoutCalendar } from "@/components/fitness/workout-calendar"
+import { WorkoutCalendar, ScheduledWorkout } from "@/components/fitness/workout-calendar"
 
 // ─── Data ────────────────────────────────────────────────────────────────────
-
-interface ScheduledWorkout {
-  id: string
-  workoutId: string
-  title: string
-  category: string
-  duration: string
-  date: string
-  status: "scheduled" | "completed" | "missed"
-}
 
 interface AppUser {
   id: string
@@ -287,11 +277,13 @@ function ClientProfileView({
   client,
   onBack,
   onScheduleWorkout,
+  onScheduleExercise,
   onRemoveWorkout,
 }: {
   client: AppUser
   onBack: () => void
   onScheduleWorkout: (date: string, workout: LibraryWorkout) => void
+  onScheduleExercise: (date: string, exercise: Omit<ScheduledWorkout, "id" | "date" | "status">) => void
   onRemoveWorkout: (workoutId: string) => void
 }) {
   const scheduledCount = client.scheduledWorkouts?.filter(w => w.status === "scheduled").length || 0
@@ -371,6 +363,7 @@ function ClientProfileView({
             scheduledWorkouts={client.scheduledWorkouts || []}
             availableWorkouts={libraryWorkouts}
             onScheduleWorkout={onScheduleWorkout}
+            onScheduleExercise={onScheduleExercise}
             onRemoveWorkout={onRemoveWorkout}
             clientName={client.name}
           />
@@ -412,6 +405,26 @@ export function PTCoachScreen() {
           ? { ...u, isClient: true, joinedDate: "Apr 2026", lastActive: "Just now", workoutsCompleted: 0, currentStreak: 0, scheduledWorkouts: [] }
           : u
       )
+    )
+  }
+
+  const handleScheduleExercise = (clientId: string, date: string, exercise: Omit<ScheduledWorkout, "id" | "date" | "status">) => {
+    const newEntry: ScheduledWorkout = {
+      id: `sw-${Date.now()}`,
+      date,
+      status: "scheduled",
+      ...exercise,
+    }
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.id !== clientId ? u : { ...u, scheduledWorkouts: [...(u.scheduledWorkouts || []), newEntry] }
+      )
+    )
+    setSelectedClient((prev) =>
+      !prev || prev.id !== clientId ? prev : {
+        ...prev,
+        scheduledWorkouts: [...(prev.scheduledWorkouts || []), newEntry],
+      }
     )
   }
 
@@ -479,6 +492,7 @@ export function PTCoachScreen() {
         client={selectedClient}
         onBack={() => setSelectedClient(null)}
         onScheduleWorkout={(date, workout) => handleScheduleWorkout(selectedClient.id, date, workout)}
+        onScheduleExercise={(date, exercise) => handleScheduleExercise(selectedClient.id, date, exercise)}
         onRemoveWorkout={(workoutId) => handleRemoveWorkout(selectedClient.id, workoutId)}
       />
     )

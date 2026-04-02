@@ -1,25 +1,20 @@
 "use client"
 
-import {
-  Home,
-  Dumbbell,
-  Users,
-  TrendingUp,
-  User,
-  PenTool,
-} from "lucide-react"
+import { Home, Dumbbell, Users, TrendingUp, User, PenTool } from "lucide-react"
 import { cn } from "@/lib/utils"
 
+type NavTab = "home" | "workouts" | "build" | "progress" | "profile" | "pt-clients" | "pt-builder"
+
 interface NavItem {
-  id: string
+  id: NavTab
   label: string
-  icon: typeof Home
+  icon: React.ElementType
   isCenter: boolean
 }
 
 interface BottomNavProps {
-  activeTab: string
-  onTabChange: (tab: string) => void
+  activeTab: NavTab
+  onTabChange: (tab: NavTab) => void
   ptMode?: boolean
 }
 
