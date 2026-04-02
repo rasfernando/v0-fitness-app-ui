@@ -8,11 +8,12 @@ import { WorkoutLibraryScreen, type Workout } from "@/components/fitness/screens
 import { WorkoutDetailScreen, exerciseData } from "@/components/fitness/screens/workout-detail-screen"
 import { WorkoutPlayerScreen } from "@/components/fitness/screens/workout-player-screen"
 import { PTCoachScreen } from "@/components/fitness/screens/pt-coach-screen"
+import { PTBuilderScreen } from "@/components/fitness/screens/pt-builder-screen"
 import { BottomNav } from "@/components/fitness/bottom-nav"
 import { cn } from "@/lib/utils"
 
-type Screen = "welcome" | "signin" | "signup" | "dashboard" | "workouts" | "workout-detail" | "workout-player" | "build" | "progress" | "profile"
-type NavTab = "home" | "workouts" | "build" | "progress" | "profile"
+type Screen = "welcome" | "signin" | "signup" | "dashboard" | "workouts" | "workout-detail" | "workout-player" | "build" | "progress" | "profile" | "pt-clients" | "pt-builder"
+type NavTab = "home" | "workouts" | "build" | "progress" | "profile" | "pt-clients" | "pt-builder"
 type AppMode = "client" | "pt"
 
 function ModeToggle({ mode, onChange }: { mode: AppMode; onChange: (m: AppMode) => void }) {
@@ -51,6 +52,7 @@ export default function FitnessApp() {
   const [currentScreen, setCurrentScreen] = useState<Screen>("welcome")
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null)
   const [activeTab, setActiveTab] = useState<NavTab>("home")
+  const [ptActiveTab, setPtActiveTab] = useState<NavTab>("pt-clients")
 
   const isAuthed = !["welcome", "signin", "signup"].includes(currentScreen)
 
@@ -58,8 +60,8 @@ export default function FitnessApp() {
     setAppMode(mode)
     // Reset to the appropriate home screen when switching modes
     if (mode === "pt") {
-      setCurrentScreen("build")
-      setActiveTab("build")
+      setCurrentScreen("pt-clients")
+      setPtActiveTab("pt-clients")
     } else {
       setCurrentScreen("dashboard")
       setActiveTab("home")
@@ -92,6 +94,18 @@ export default function FitnessApp() {
     }
   }
 
+  const handlePTNavigation = (tab: NavTab) => {
+    setPtActiveTab(tab)
+    switch (tab) {
+      case "pt-clients":
+        setCurrentScreen("pt-clients")
+        break
+      case "pt-builder":
+        setCurrentScreen("pt-builder")
+        break
+    }
+  }
+
   const handleSelectWorkout = (workout: Workout) => {
     setSelectedWorkout(workout)
     setCurrentScreen("workout-detail")
@@ -114,14 +128,15 @@ export default function FitnessApp() {
   const showBottomNav = ["dashboard", "workouts", "build", "progress", "profile"].includes(currentScreen)
 
   // ── PT Mode ──────────────────────────────────────────────────────────────────
-  if (appMode === "pt") {
+  if (appMode === "pt" && isAuthed) {
     return (
       <main className="mx-auto min-h-screen max-w-md bg-background">
         <ModeToggle mode={appMode} onChange={handleModeChange} />
         <div className="pb-24">
-          <PTCoachScreen />
+          {currentScreen === "pt-clients" && <PTCoachScreen />}
+          {currentScreen === "pt-builder" && <PTBuilderScreen />}
         </div>
-        <BottomNav activeTab="build" onTabChange={() => {}} ptMode />
+        <BottomNav activeTab={ptActiveTab} onTabChange={handlePTNavigation} ptMode />
       </main>
     )
   }

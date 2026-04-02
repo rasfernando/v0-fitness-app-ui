@@ -1,6 +1,7 @@
 "use client"
 
-import { Home, Dumbbell, Users, TrendingUp, User } from "lucide-react"
+// Bottom navigation component - updated 2026-04-02
+import { Home, Dumbbell, Users, TrendingUp, User, PenTool } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface BottomNavProps {
@@ -9,21 +10,26 @@ interface BottomNavProps {
   ptMode?: boolean
 }
 
-const navItems = [
+const clientNavItems = [
   { id: "home", label: "Home", icon: Home, isCenter: false },
   { id: "workouts", label: "Workouts", icon: Dumbbell, isCenter: false },
-  { id: "build", label: "Clients", icon: Users, isCenter: true },
+  { id: "build", label: "Build", icon: PenTool, isCenter: true },
   { id: "progress", label: "Progress", icon: TrendingUp, isCenter: false },
   { id: "profile", label: "Profile", icon: User, isCenter: false },
 ]
 
+const ptNavItems = [
+  { id: "pt-builder", label: "Builder", icon: PenTool, isCenter: false },
+  { id: "pt-clients", label: "Clients", icon: Users, isCenter: true },
+]
+
 export function BottomNav({ activeTab, onTabChange, ptMode = false }: BottomNavProps) {
-  const visibleItems = ptMode ? navItems.filter((i) => i.id === "build") : navItems
+  const navItems = ptMode ? ptNavItems : clientNavItems
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 backdrop-blur-lg safe-area-pb">
       <div className="mx-auto flex max-w-lg items-center justify-around px-4 py-2">
-        {visibleItems.map((item) => {
+        {navItems.map((item) => {
           const Icon = item.icon
           const isActive = activeTab === item.id
 
