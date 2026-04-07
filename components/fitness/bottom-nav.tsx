@@ -6,7 +6,7 @@
  * Supports both Client and PT modes with different nav items
  */
 
-import { Home, Dumbbell, Play, TrendingUp, User, PenTool } from "lucide-react"
+import { Home, Dumbbell, Play, TrendingUp, User, PenTool, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 type NavTab = "home" | "workouts" | "start" | "progress" | "profile" | "pt-clients" | "pt-builder"
