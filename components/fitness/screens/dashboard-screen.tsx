@@ -3,41 +3,11 @@
 // Dashboard screen - fitness app (v2)
 import { useState, useMemo, useEffect, useRef } from "react"
 import { Bell, Flame, Timer, Trophy, TrendingUp, Calendar, ChevronRight, Dumbbell, Clock, Play } from "lucide-react"
-import { WorkoutCard } from "@/components/fitness/workout-card"
 import { StatCard } from "@/components/fitness/stat-card"
-import { FilterChips } from "@/components/fitness/filter-chips"
 import { WorkoutCalendar } from "@/components/fitness/workout-calendar"
 import { useScheduledWorkouts } from "@/lib/hooks/use-scheduled-workouts"
 import { cn } from "@/lib/utils"
 
-const workoutCategories = ["All", "Strength", "HIIT", "Cardio", "Mobility"]
-
-const featuredWorkouts = [
-  {
-    title: "Upper Body Power",
-    category: "Strength",
-    duration: "45 min",
-    calories: "380 cal",
-    imageUrl: "https://images.unsplash.com/photo-1581009146145-b5ef050c149a?w=500&auto=format&fit=crop&q=80",
-    difficulty: "Intermediate" as const,
-  },
-  {
-    title: "HIIT Burn",
-    category: "HIIT",
-    duration: "30 min",
-    calories: "450 cal",
-    imageUrl: "https://images.unsplash.com/photo-1549060279-7e168fcee0c2?w=500&auto=format&fit=crop&q=80",
-    difficulty: "Advanced" as const,
-  },
-  {
-    title: "Core Crusher",
-    category: "Strength",
-    duration: "20 min",
-    calories: "200 cal",
-    imageUrl: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=500&auto=format&fit=crop&q=80",
-    difficulty: "Beginner" as const,
-  },
-]
 
 // scheduledWorkouts is now loaded from Supabase via useScheduledWorkouts() — see below.
 
@@ -54,7 +24,6 @@ interface DashboardScreenProps {
 
 export function DashboardScreen({ onNavigateToWorkouts, onStartScheduledWorkout }: DashboardScreenProps) {
   // v3 — no ProgrammeCard, uses nextWorkout
-  const [selectedCategory, setSelectedCategory] = useState("All")
   const [showCalendar, setShowCalendar] = useState(false)
   const [activityTab, setActivityTab] = useState<"upcoming" | "recent">("upcoming")
 
@@ -74,10 +43,6 @@ export function DashboardScreen({ onNavigateToWorkouts, onStartScheduledWorkout 
       })),
     [scheduledWorkoutsRaw]
   )
-
-  const filteredWorkouts = selectedCategory === "All" 
-    ? featuredWorkouts 
-    : featuredWorkouts.filter(w => w.category === selectedCategory)
 
   // Get upcoming scheduled workouts (next 7 days)
   const today = new Date()
@@ -307,59 +272,6 @@ export function DashboardScreen({ onNavigateToWorkouts, onStartScheduledWorkout 
           )}
         </div>
       </section>
-
-      {/* Featured Workouts */}
-      <section className="py-4">
-        <div className="flex items-center justify-between px-6">
-          <h2 className="font-[family-name:var(--font-display)] text-lg font-bold uppercase text-foreground">
-            Featured Workouts
-          </h2>
-          <button onClick={onNavigateToWorkouts} className="text-sm font-medium text-primary">View All</button>
-        </div>
-        
-        <div className="mt-3 px-6">
-          <FilterChips
-            options={workoutCategories}
-            selected={selectedCategory}
-            onSelect={setSelectedCategory}
-          />
-        </div>
-        
-        <div className="mt-4 flex gap-4 overflow-x-auto px-6 pb-2 scrollbar-hide">
-          {filteredWorkouts.map((workout, index) => (
-            <WorkoutCard
-              key={index}
-              {...workout}
-              className="w-[280px] shrink-0"
-            />
-          ))}
-        </div>
-      </section>
-
-      {/* Featured Plans */}
-      <section className="px-6 py-4">
-        <div className="flex items-center justify-between">
-          <h2 className="font-[family-name:var(--font-display)] text-lg font-bold uppercase text-foreground">
-            Browse Workouts
-          </h2>
-          <button className="text-sm font-medium text-primary">View All</button>
-        </div>
-        
-        <div className="mt-4 space-y-3">
-          <div className="flex items-center gap-4 rounded-xl bg-card p-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-              <Dumbbell className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-foreground">Beginner-Friendly Workouts</h4>
-              <p className="text-sm text-muted-foreground">Start your fitness journey</p>
-            </div>
-            <ChevronRight className="h-5 w-5 text-muted-foreground" />
-          </div>
-        </div>
-      </section>
-
-
 
       {/* Calendar Modal */}
       {showCalendar && (
