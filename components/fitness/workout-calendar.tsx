@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react"
 import { ChevronLeft, ChevronRight, Plus, Dumbbell, Clock, X, Check, Search, Layers, ListChecks } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { LoggedSetsList } from "./logged-sets-list"
 
 export interface ScheduledWorkout {
   id: string
@@ -517,6 +518,9 @@ export function WorkoutCalendar({
   const [currentYear, setCurrentYear] = useState(today.getFullYear())
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [showAddSheet, setShowAddSheet] = useState(false)
+  // Which completed workout's logged sets are currently expanded for review.
+  // Only one at a time — collapses any other expanded one.
+  const [expandedWorkoutId, setExpandedWorkoutId] = useState<string | null>(null)
 
   const daysInMonth = useMemo(() => {
     const firstDay = new Date(currentYear, currentMonth, 1)
@@ -695,59 +699,90 @@ export function WorkoutCalendar({
 
           {selectedDateWorkouts.length > 0 ? (
             <div className="mt-3 space-y-2">
-              {selectedDateWorkouts.map((item) => (
-                <div key={item.id} className="flex items-start gap-3 rounded-xl bg-card p-3">
-                  <div className={cn(
-                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
-                    item.status === "completed" ? "bg-emerald-500/20"
-                      : item.status === "missed" ? "bg-red-500/20"
-                      : item.type === "single_exercise" ? "bg-primary/10"
-                      : "bg-primary/20"
-                  )}>
-                    {item.type === "single_exercise"
-                      ? <ListChecks className={cn("h-5 w-5", item.status === "completed" ? "text-emerald-400" : "text-primary")} />
-                      : <Dumbbell className={cn("h-5 w-5", item.status === "completed" ? "text-emerald-400" : item.status === "missed" ? "text-red-400" : "text-primary")} />
-                    }
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="truncate font-semibold text-sm text-foreground">{item.title}</p>
-                      {item.type === "single_exercise" && (
-                        <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-primary">
-                          Exercise
+              {selectedDateWorkouts.map((item) => {
+                const isCompleted = item.status === "completed"
+                const isExpanded = expandedWorkoutId === item.id
+                const isExpandable = isCompleted && item.type !== "single_exercise"
+                return (
+                  <div key={item.id} className="rounded-xl bg-card">
+                    <div
+                      className={cn(
+                        "flex items-start gap-3 p-3",
+                        isExpandable && "cursor-pointer hover:bg-secondary/50 transition-colors rounded-xl"
+                      )}
+                      onClick={
+                        isExpandable
+                          ? () => setExpandedWorkoutId(isExpanded ? null : item.id)
+                          : undefined
+                      }
+                    >
+                      <div className={cn(
+                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
+                        item.status === "completed" ? "bg-emerald-500/20"
+                          : item.status === "missed" ? "bg-red-500/20"
+                          : item.type === "single_exercise" ? "bg-primary/10"
+                          : "bg-primary/20"
+                      )}>
+                        {item.type === "single_exercise"
+                          ? <ListChecks className={cn("h-5 w-5", item.status === "completed" ? "text-emerald-400" : "text-primary")} />
+                          : <Dumbbell className={cn("h-5 w-5", item.status === "completed" ? "text-emerald-400" : item.status === "missed" ? "text-red-400" : "text-primary")} />
+                        }
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="truncate font-semibold text-sm text-foreground">{item.title}</p>
+                          {item.type === "single_exercise" && (
+                            <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-primary">
+                              Exercise
+                            </span>
+                          )}
+                        </div>
+                        {item.type === "single_exercise" ? (
+                          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                            <span>{item.sets} sets</span>
+                            {item.reps && <span>{item.reps} reps</span>}
+                            {item.weight && <span className="text-primary">{item.weight}</span>}
+                            {item.rest && <span>Rest: {item.rest}</span>}
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>{item.category}</span>
+                            <span>·</span>
+                            <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{item.duration}</span>
+                            {isExpandable && (
+                              <>
+                                <span>·</span>
+                                <span className="text-primary">{isExpanded ? "Hide" : "Tap to view"}</span>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      {!readOnly && item.status === "scheduled" && onRemoveWorkout && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onRemoveWorkout(item.id)
+                          }}
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary text-muted-foreground hover:bg-destructive/20 hover:text-destructive"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                      {item.status === "completed" && (
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/20">
+                          <Check className="h-3.5 w-3.5 text-emerald-400" />
                         </span>
                       )}
                     </div>
-                    {item.type === "single_exercise" ? (
-                      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-                        <span>{item.sets} sets</span>
-                        {item.reps && <span>{item.reps} reps</span>}
-                        {item.weight && <span className="text-primary">{item.weight}</span>}
-                        {item.rest && <span>Rest: {item.rest}</span>}
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>{item.category}</span>
-                        <span>·</span>
-                        <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{item.duration}</span>
+                    {isExpanded && (
+                      <div className="border-t border-border/50 px-3 pb-3">
+                        <LoggedSetsList scheduledWorkoutId={item.id} />
                       </div>
                     )}
                   </div>
-                  {!readOnly && item.status === "scheduled" && onRemoveWorkout && (
-                    <button
-                      onClick={() => onRemoveWorkout(item.id)}
-                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary text-muted-foreground hover:bg-destructive/20 hover:text-destructive"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-                  {item.status === "completed" && (
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/20">
-                      <Check className="h-3.5 w-3.5 text-emerald-400" />
-                    </span>
-                  )}
-                </div>
-              ))}
+                )
+              })}
             </div>
           ) : (
             <div className="mt-4 flex flex-col items-center py-6 text-center">
