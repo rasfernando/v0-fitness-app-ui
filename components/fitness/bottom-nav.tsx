@@ -6,10 +6,10 @@
  * Supports both Client and PT modes with different nav items
  */
 
-import { Home, Dumbbell, Play, TrendingUp, User, PenTool, Users } from "lucide-react"
+import { Home, Play, TrendingUp, User, PenTool, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-type NavTab = "home" | "workouts" | "start" | "progress" | "profile" | "pt-clients" | "pt-builder"
+export type NavTab = "home" | "start" | "progress" | "profile" | "pt-clients" | "pt-builder"
 
 interface NavItem {
   id: NavTab
@@ -26,9 +26,8 @@ interface BottomNavProps {
 
 const CLIENT_NAV_ITEMS: NavItem[] = [
   { id: "home", label: "Home", icon: Home, isCenter: false },
-  { id: "workouts", label: "Workouts", icon: Dumbbell, isCenter: false },
-  { id: "start", label: "Start", icon: Play, isCenter: true },
   { id: "progress", label: "Progress", icon: TrendingUp, isCenter: false },
+  { id: "start", label: "Start", icon: Play, isCenter: true },
   { id: "profile", label: "Profile", icon: User, isCenter: false },
 ]
 
