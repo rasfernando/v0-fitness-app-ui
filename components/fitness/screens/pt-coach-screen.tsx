@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import {
   Search,
   X,
@@ -16,6 +16,8 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { WorkoutCalendar, ScheduledWorkout } from "@/components/fitness/workout-calendar"
+import { useClients } from "@/lib/hooks/use-clients"
+import { useScheduledWorkouts } from "@/lib/hooks/use-scheduled-workouts"
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 
@@ -286,11 +288,42 @@ function ClientProfileView({
   onScheduleExercise: (date: string, exercise: Omit<ScheduledWorkout, "id" | "date" | "status">) => void
   onRemoveWorkout: (workoutId: string) => void
 }) {
-  const scheduledCount = client.scheduledWorkouts?.filter(w => w.status === "scheduled").length || 0
-  const completedCount = client.scheduledWorkouts?.filter(w => w.status === "completed").length || 0
+  // Per-client schedule loaded from Supabase. The parent doesn't pre-load
+  // these to avoid N+1 queries on the roster screen.
+  const { data: realSchedule, error: scheduleError } = useScheduledWorkouts(client.id)
+
+  // Merge: prefer real DB data, but fall back to whatever was in client.scheduledWorkouts
+  // (which is where in-memory mutations from this session live until refresh).
+  const mergedSchedule: ScheduledWorkout[] = useMemo(() => {
+    const fromDb: ScheduledWorkout[] = realSchedule.map((r) => ({
+      id: r.id,
+      workoutId: r.workoutId,
+      title: r.title,
+      category: r.category,
+      duration: r.duration,
+      date: r.date,
+      // DB has 4 statuses, calendar component only knows 3.
+      // TODO: align WorkoutCalendar's ScheduledWorkout type with the DB enum
+      // and add 'skipped' as a distinct visual state.
+      status: r.status === "skipped" ? "missed" : r.status,
+    }))
+    // In-memory additions from this session that aren't in the DB yet
+    const localOnly = (client.scheduledWorkouts ?? []).filter(
+      (local) => !fromDb.some((db) => db.id === local.id)
+    )
+    return [...fromDb, ...localOnly]
+  }, [realSchedule, client.scheduledWorkouts])
+
+  const scheduledCount = mergedSchedule.filter(w => w.status === "scheduled").length
+  const completedCount = mergedSchedule.filter(w => w.status === "completed").length
 
   return (
     <div className="flex min-h-full flex-col bg-background pb-8">
+      {scheduleError && (
+        <div className="mx-4 mt-2 rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          Failed to load schedule: {scheduleError}
+        </div>
+      )}
       {/* Header */}
       <div className="sticky top-0 z-10 flex items-center gap-3 bg-background/95 px-4 pb-4 pt-3 backdrop-blur-sm">
         <button
@@ -360,7 +393,7 @@ function ClientProfileView({
         </h3>
         <div className="rounded-xl bg-card">
           <WorkoutCalendar
-            scheduledWorkouts={client.scheduledWorkouts || []}
+            scheduledWorkouts={mergedSchedule}
             availableWorkouts={libraryWorkouts}
             onScheduleWorkout={onScheduleWorkout}
             onScheduleExercise={onScheduleExercise}
@@ -376,10 +409,50 @@ function ClientProfileView({
 // ─── Main PT Coach Screen ─────────────────────────────────────────────────────
 
 export function PTCoachScreen() {
+  // ─────────────────────────────────────────────────────────────────────────
+  // BACKEND BOUNDARY:
+  //   - Initial client roster is loaded from Supabase via useClients().
+  //   - Per-client schedule is loaded via useScheduledWorkouts(clientId).
+  //   - Mutations (schedule/remove/add) currently only update local state.
+  //     They will NOT persist on refresh until the next pass wires up
+  //     supabase.from("scheduled_workouts").insert/delete calls.
+  //   - The "add non-client as client" flow uses purely mock data —
+  //     there's no concept of "users not yet coached by me" in the schema
+  //     yet (would need an invite/discovery system).
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const { data: clientSummaries, error: clientsError } = useClients()
+
   const [users, setUsers] = useState<AppUser[]>(initialUsers)
   const [searchQuery, setSearchQuery] = useState("")
   const [showAddClient, setShowAddClient] = useState(false)
   const [selectedClient, setSelectedClient] = useState<AppUser | null>(null)
+
+  // Sync hook data → local state. We replace the "isClient: true" rows but
+  // keep the "isClient: false" mock users so the Add Client search still works.
+  useEffect(() => {
+    setUsers((prev) => {
+      const nonClients = prev.filter((u) => !u.isClient)
+      const realClients: AppUser[] = clientSummaries.map((c) => ({
+        id: c.id,
+        name: c.name,
+        username: `@${c.username}`,
+        avatarUrl:
+          c.avatarUrl ??
+          "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80",
+        isClient: true,
+        joinedDate: new Date(c.joinedAt).toLocaleDateString("en-US", {
+          month: "short",
+          year: "numeric",
+        }),
+        lastActive: "—", // not tracked yet
+        workoutsCompleted: c.completedCount,
+        currentStreak: 0, // computed-not-stored, deferred
+        scheduledWorkouts: [], // populated by ClientProfileView via its own hook
+      }))
+      return [...realClients, ...nonClients]
+    })
+  }, [clientSummaries])
 
   const clients = useMemo(() => users.filter((u) => u.isClient), [users])
 
@@ -389,14 +462,11 @@ export function PTCoachScreen() {
       c.username.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const totalScheduled = clients.reduce(
-    (sum, c) => sum + (c.scheduledWorkouts?.filter(w => w.status === "scheduled").length || 0),
-    0
-  )
-  const totalCompleted = clients.reduce(
-    (sum, c) => sum + (c.scheduledWorkouts?.filter(w => w.status === "completed").length || 0),
-    0
-  )
+  // Stats now come from the hook summaries (accurate counts straight from DB),
+  // not from the filtered local state which only has scheduledWorkouts loaded
+  // when a client is selected.
+  const totalScheduled = clientSummaries.reduce((sum, c) => sum + c.scheduledCount, 0)
+  const totalCompleted = clientSummaries.reduce((sum, c) => sum + c.completedCount, 0)
 
   const handleAddClient = (userId: string) => {
     setUsers((prev) =>
@@ -562,6 +632,11 @@ export function PTCoachScreen() {
 
       {/* Client List */}
       <div className="flex-1 px-4">
+        {clientsError && (
+          <div className="mb-3 rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            Failed to load clients: {clientsError}
+          </div>
+        )}
         {filteredClients.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-secondary">
@@ -582,7 +657,9 @@ export function PTCoachScreen() {
         ) : (
           <div className="space-y-3">
             {filteredClients.map((client) => {
-              const scheduledCount = client.scheduledWorkouts?.filter(w => w.status === "scheduled").length || 0
+              // Use real count from the hook summary, not the (empty) local state
+              const summary = clientSummaries.find((s) => s.id === client.id)
+              const scheduledCount = summary?.scheduledCount ?? 0
               return (
                 <button
                   key={client.id}

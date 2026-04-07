@@ -1,12 +1,13 @@
 "use client"
 
 // Dashboard screen - fitness app (v2)
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Bell, Flame, Timer, Trophy, TrendingUp, Calendar, ChevronRight, Dumbbell, Clock, Play } from "lucide-react"
 import { WorkoutCard } from "@/components/fitness/workout-card"
 import { StatCard } from "@/components/fitness/stat-card"
 import { FilterChips } from "@/components/fitness/filter-chips"
 import { WorkoutCalendar } from "@/components/fitness/workout-calendar"
+import { useScheduledWorkouts } from "@/lib/hooks/use-scheduled-workouts"
 import { cn } from "@/lib/utils"
 
 const workoutCategories = ["All", "Strength", "HIIT", "Cardio", "Mobility"]
@@ -38,15 +39,7 @@ const featuredWorkouts = [
   },
 ]
 
-// Scheduled workouts from PT
-const scheduledWorkouts = [
-  { id: "sw1", workoutId: "w1", title: "Full Body Burn", category: "Strength", duration: "45 min", date: "2026-04-03", status: "scheduled" as const },
-  { id: "sw2", workoutId: "w2", title: "HIIT Cardio Blast", category: "Cardio", duration: "30 min", date: "2026-04-05", status: "scheduled" as const },
-  { id: "sw3", workoutId: "w3", title: "Core Crusher", category: "Core", duration: "20 min", date: "2026-04-01", status: "completed" as const },
-  { id: "sw4", workoutId: "w4", title: "Upper Body Power", category: "Strength", duration: "40 min", date: "2026-04-07", status: "scheduled" as const },
-  { id: "sw5", workoutId: "w5", title: "Leg Day Destroyer", category: "Strength", duration: "50 min", date: "2026-04-02", status: "completed" as const },
-  { id: "sw6", workoutId: "w6", title: "Morning Mobility", category: "Recovery", duration: "15 min", date: "2026-04-09", status: "scheduled" as const },
-]
+// scheduledWorkouts is now loaded from Supabase via useScheduledWorkouts() — see below.
 
 const recentActivity = [
   { name: "Leg Day Destroyer", date: "Today", duration: "52 min" },
@@ -63,6 +56,23 @@ export function DashboardScreen({ onNavigateToWorkouts }: DashboardScreenProps) 
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [showCalendar, setShowCalendar] = useState(false)
   const [activityTab, setActivityTab] = useState<"upcoming" | "recent">("upcoming")
+
+  // Real data from Supabase, scoped to the current dev user.
+  const { data: scheduledWorkoutsRaw, error: scheduleError } = useScheduledWorkouts()
+
+  // Normalize the DB's 4 statuses down to the 3 the calendar component understands.
+  // TODO: align WorkoutCalendar's status type with the DB enum.
+  const scheduledWorkouts = useMemo(
+    () =>
+      scheduledWorkoutsRaw.map((w) => ({
+        ...w,
+        status: (w.status === "skipped" ? "missed" : w.status) as
+          | "scheduled"
+          | "completed"
+          | "missed",
+      })),
+    [scheduledWorkoutsRaw]
+  )
 
   const filteredWorkouts = selectedCategory === "All" 
     ? featuredWorkouts 
@@ -115,6 +125,12 @@ export function DashboardScreen({ onNavigateToWorkouts }: DashboardScreenProps) 
           </div>
         </div>
       </header>
+
+      {scheduleError && (
+        <div className="mx-6 mt-2 rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          Failed to load schedule: {scheduleError}
+        </div>
+      )}
 
       {/* Quick Stats */}
       <section className="px-6 py-4">
