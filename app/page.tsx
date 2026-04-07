@@ -9,6 +9,7 @@ import { WorkoutDetailScreen } from "@/components/fitness/screens/workout-detail
 import { WorkoutPlayerScreen } from "@/components/fitness/screens/workout-player-screen"
 import { PTCoachScreen } from "@/components/fitness/screens/pt-coach-screen"
 import { PTBuilderScreen } from "@/components/fitness/screens/pt-builder-screen"
+import { ProgressScreen } from "@/components/fitness/screens/progress-screen"
 import { BottomNav } from "@/components/fitness/bottom-nav"
 import { cn } from "@/lib/utils"
 
@@ -228,17 +229,7 @@ export default function FitnessApp() {
         </div>
       )}
 
-      {currentScreen === "progress" && (
-        <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 pb-24 text-center">
-          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/20">
-            <span className="font-[family-name:var(--font-display)] text-3xl font-bold text-primary">%</span>
-          </div>
-          <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold uppercase text-foreground">
-            Your Progress
-          </h1>
-          <p className="mt-2 text-muted-foreground">Detailed analytics coming soon</p>
-        </div>
-      )}
+      {currentScreen === "progress" && <ProgressScreen />}
 
       {currentScreen === "profile" && (
         <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 pb-24 text-center">
