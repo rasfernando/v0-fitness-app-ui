@@ -1,7 +1,7 @@
 "use client"
 
 // Dashboard screen - fitness app (v2)
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import { Bell, Flame, Timer, Trophy, TrendingUp, Calendar, ChevronRight, Dumbbell, Clock, Play } from "lucide-react"
 import { WorkoutCard } from "@/components/fitness/workout-card"
 import { StatCard } from "@/components/fitness/stat-card"
@@ -358,41 +358,105 @@ export function DashboardScreen({ onNavigateToWorkouts }: DashboardScreenProps) 
 
       {/* Calendar Modal */}
       {showCalendar && (
-        <div className="fixed inset-0 z-50 flex flex-col">
-          <div
-            className="flex-1 bg-background/60 backdrop-blur-sm"
-            onClick={() => setShowCalendar(false)}
-          />
-          <div className="max-h-[85vh] overflow-y-auto rounded-t-2xl bg-card shadow-xl">
-            <div className="sticky top-0 z-10 bg-card">
-              <div className="flex justify-center pt-3">
-                <div className="h-1 w-10 rounded-full bg-border" />
-              </div>
-              <div className="flex items-center justify-between px-5 pb-2 pt-4">
-                <div>
-                  <h3 className="font-[family-name:var(--font-display)] text-lg font-bold uppercase text-foreground">
-                    My Schedule
-                  </h3>
-                  <p className="text-xs text-muted-foreground">Workouts from Coach Marcus</p>
-                </div>
-                <button
-                  onClick={() => setShowCalendar(false)}
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-muted-foreground hover:text-foreground"
-                >
-                  <ChevronRight className="h-4 w-4 rotate-90" />
-                </button>
-              </div>
-            </div>
-            <div className="pb-8">
-              <WorkoutCalendar
-                scheduledWorkouts={scheduledWorkouts}
-                readOnly
-              />
-            </div>
-          </div>
-        </div>
+        <CalendarModal
+          scheduledWorkouts={scheduledWorkouts}
+          onClose={() => setShowCalendar(false)}
+        />
       )}
 
+    </div>
+  )
+}
+
+// Bottom-sheet modal hosting the calendar in client view.
+// Extracted into its own component so it can own its scroll-target ref
+// and body-scroll-lock effect cleanly.
+function CalendarModal({
+  scheduledWorkouts,
+  onClose,
+}: {
+  scheduledWorkouts: Array<{
+    id: string
+    workoutId: string
+    title: string
+    category: string
+    duration: string
+    date: string
+    status: "scheduled" | "completed" | "missed"
+  }>
+  onClose: () => void
+}) {
+  const sheetRef = useRef<HTMLDivElement>(null)
+
+  // Lock body scroll while the modal is open. Without this, finger swipes
+  // inside the modal propagate to the page behind on mobile, which feels
+  // broken — the page scrolls instead of the modal.
+  useEffect(() => {
+    const original = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.body.style.overflow = original
+    }
+  }, [])
+
+  // When the user taps a date, the WorkoutCalendar renders a "selected date
+  // details" section below the calendar grid. On mobile that section is
+  // often below the fold of the bottom sheet, with no visual cue that
+  // anything happened. We watch for taps on day cells and scroll the sheet
+  // to the bottom so the detail panel is brought into view.
+  const handleDayTap = () => {
+    // Defer until after the calendar has re-rendered with the selected date
+    requestAnimationFrame(() => {
+      sheetRef.current?.scrollTo({
+        top: sheetRef.current.scrollHeight,
+        behavior: "smooth",
+      })
+    })
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col">
+      <div
+        className="flex-1 bg-background/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div
+        ref={sheetRef}
+        className="max-h-[85vh] overflow-y-auto overscroll-contain rounded-t-2xl bg-card shadow-xl"
+      >
+        <div className="sticky top-0 z-10 bg-card">
+          <div className="flex justify-center pt-3">
+            <div className="h-1 w-10 rounded-full bg-border" />
+          </div>
+          <div className="flex items-center justify-between px-5 pb-2 pt-4">
+            <div>
+              <h3 className="font-[family-name:var(--font-display)] text-lg font-bold uppercase text-foreground">
+                My Schedule
+              </h3>
+              <p className="text-xs text-muted-foreground">Tap a date to see details</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-muted-foreground hover:text-foreground"
+            >
+              <ChevronRight className="h-4 w-4 rotate-90" />
+            </button>
+          </div>
+        </div>
+        {/* onClick on the wrapper catches all taps inside the calendar grid;
+            it's intentionally permissive — scrolling on a non-day tap is
+            harmless and beats trying to wire a callback through the
+            WorkoutCalendar component just for this.
+            TODO: when the WorkoutCalendar gets refactored, expose an
+            onDateSelect callback so we can scroll on day taps only and
+            not when navigating months. */}
+        <div className="pb-8" onClick={handleDayTap}>
+          <WorkoutCalendar
+            scheduledWorkouts={scheduledWorkouts}
+            readOnly
+          />
+        </div>
+      </div>
     </div>
   )
 }
