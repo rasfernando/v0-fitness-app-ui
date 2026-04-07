@@ -18,6 +18,13 @@ import { cn } from "@/lib/utils"
 import { WorkoutCalendar, ScheduledWorkout } from "@/components/fitness/workout-calendar"
 import { useClients } from "@/lib/hooks/use-clients"
 import { useScheduledWorkouts } from "@/lib/hooks/use-scheduled-workouts"
+import { useWorkouts, type WorkoutSummary } from "@/lib/hooks/use-workouts"
+import {
+  scheduleWorkoutForClient,
+  scheduleSingleExerciseForClient,
+  unscheduleWorkout,
+} from "@/lib/mutations/scheduling"
+import { useDevUser } from "@/lib/dev-user"
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 
@@ -34,16 +41,11 @@ interface AppUser {
   scheduledWorkouts?: ScheduledWorkout[]
 }
 
-interface LibraryWorkout {
-  id: string
-  title: string
-  category: string
-  duration: string
-  calories: string
-  difficulty: "Beginner" | "Intermediate" | "Advanced"
-  exercises: number
-  imageUrl: string
-}
+// LibraryWorkout was a hardcoded local interface; it's now an alias for the
+// WorkoutSummary returned by useWorkouts(), which is the same shape but
+// backed by real database rows. Kept as a type alias so the existing prop
+// signatures elsewhere in this file don't need touching.
+type LibraryWorkout = WorkoutSummary
 
 const initialUsers: AppUser[] = [
   {
@@ -125,38 +127,8 @@ const initialUsers: AppUser[] = [
   },
 ]
 
-const libraryWorkouts: LibraryWorkout[] = [
-  {
-    id: "w1", title: "Full Body Burn", category: "Strength", duration: "45 min",
-    calories: "450 cal", difficulty: "Intermediate", exercises: 12,
-    imageUrl: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=300&q=80",
-  },
-  {
-    id: "w2", title: "HIIT Cardio Blast", category: "Cardio", duration: "30 min",
-    calories: "380 cal", difficulty: "Advanced", exercises: 8,
-    imageUrl: "https://images.unsplash.com/photo-1601422407692-ec4eeec1d9b3?w=300&q=80",
-  },
-  {
-    id: "w3", title: "Core Crusher", category: "Core", duration: "20 min",
-    calories: "180 cal", difficulty: "Beginner", exercises: 10,
-    imageUrl: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=300&q=80",
-  },
-  {
-    id: "w4", title: "Upper Body Power", category: "Strength", duration: "40 min",
-    calories: "320 cal", difficulty: "Intermediate", exercises: 10,
-    imageUrl: "https://images.unsplash.com/photo-1581009146145-b5ef050c149a?w=300&q=80",
-  },
-  {
-    id: "w5", title: "Leg Day Destroyer", category: "Strength", duration: "50 min",
-    calories: "520 cal", difficulty: "Advanced", exercises: 14,
-    imageUrl: "https://images.unsplash.com/photo-1434608519344-49d77a699e1d?w=300&q=80",
-  },
-  {
-    id: "w6", title: "Morning Mobility", category: "Recovery", duration: "15 min",
-    calories: "80 cal", difficulty: "Beginner", exercises: 8,
-    imageUrl: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=300&q=80",
-  },
-]
+// libraryWorkouts is no longer hardcoded — loaded from Supabase via useWorkouts()
+// in the PTCoachScreen and passed down to ClientProfileView.
 
 // ─── Add Client Sheet ─────────────────────────────────────────────────────────
 
@@ -277,51 +249,124 @@ function AddClientSheet({
 
 function ClientProfileView({
   client,
+  availableWorkouts,
   onBack,
-  onScheduleWorkout,
-  onScheduleExercise,
-  onRemoveWorkout,
 }: {
   client: AppUser
+  availableWorkouts: LibraryWorkout[]
   onBack: () => void
-  onScheduleWorkout: (date: string, workout: LibraryWorkout) => void
-  onScheduleExercise: (date: string, exercise: Omit<ScheduledWorkout, "id" | "date" | "status">) => void
-  onRemoveWorkout: (workoutId: string) => void
 }) {
+  const { user: currentUser } = useDevUser()
+
   // Per-client schedule loaded from Supabase. The parent doesn't pre-load
   // these to avoid N+1 queries on the roster screen.
-  const { data: realSchedule, error: scheduleError } = useScheduledWorkouts(client.id)
+  const {
+    data: realSchedule,
+    error: scheduleError,
+    refetch: refetchSchedule,
+  } = useScheduledWorkouts(client.id)
 
-  // Merge: prefer real DB data, but fall back to whatever was in client.scheduledWorkouts
-  // (which is where in-memory mutations from this session live until refresh).
-  const mergedSchedule: ScheduledWorkout[] = useMemo(() => {
-    const fromDb: ScheduledWorkout[] = realSchedule.map((r) => ({
-      id: r.id,
-      workoutId: r.workoutId,
-      title: r.title,
-      category: r.category,
-      duration: r.duration,
-      date: r.date,
-      // DB has 4 statuses, calendar component only knows 3.
-      // TODO: align WorkoutCalendar's ScheduledWorkout type with the DB enum
-      // and add 'skipped' as a distinct visual state.
-      status: r.status === "skipped" ? "missed" : r.status,
-    }))
-    // In-memory additions from this session that aren't in the DB yet
-    const localOnly = (client.scheduledWorkouts ?? []).filter(
-      (local) => !fromDb.some((db) => db.id === local.id)
-    )
-    return [...fromDb, ...localOnly]
-  }, [realSchedule, client.scheduledWorkouts])
+  // Inline mutation error that gets cleared on next successful action.
+  const [mutationError, setMutationError] = useState<string | null>(null)
+  const [isMutating, setIsMutating] = useState(false)
 
-  const scheduledCount = mergedSchedule.filter(w => w.status === "scheduled").length
-  const completedCount = mergedSchedule.filter(w => w.status === "completed").length
+  // Convert DB schedule to the calendar's expected shape. The DB has 4
+  // statuses but the calendar component only knows 3 — coerce 'skipped' →
+  // 'missed' as a band-aid (TODO: align WorkoutCalendar status type).
+  const calendarSchedule: ScheduledWorkout[] = useMemo(
+    () =>
+      realSchedule.map((r) => ({
+        id: r.id,
+        workoutId: r.workoutId,
+        title: r.title,
+        category: r.category,
+        duration: r.duration,
+        date: r.date,
+        status: r.status === "skipped" ? "missed" : r.status,
+      })),
+    [realSchedule]
+  )
+
+  const scheduledCount = calendarSchedule.filter((w) => w.status === "scheduled").length
+  const completedCount = calendarSchedule.filter((w) => w.status === "completed").length
+
+  // ── Mutation handlers ────────────────────────────────────────────────────
+  // Pattern for all three: clear error → set busy → call mutation → on
+  // success, refetch the schedule (which causes the calendar to re-render
+  // with the new state). On failure, surface the error and don't refetch.
+
+  const handleScheduleWorkout = async (date: string, workout: LibraryWorkout) => {
+    setMutationError(null)
+    setIsMutating(true)
+    try {
+      await scheduleWorkoutForClient({
+        clientId: client.id,
+        ptId: currentUser.id,
+        workoutId: workout.id,
+        scheduledDate: date,
+      })
+      refetchSchedule()
+    } catch (err) {
+      setMutationError(err instanceof Error ? err.message : "Failed to schedule workout")
+    } finally {
+      setIsMutating(false)
+    }
+  }
+
+  const handleScheduleExercise = async (
+    date: string,
+    exercise: Omit<ScheduledWorkout, "id" | "date" | "status">
+  ) => {
+    setMutationError(null)
+    setIsMutating(true)
+    try {
+      await scheduleSingleExerciseForClient({
+        clientId: client.id,
+        ptId: currentUser.id,
+        exerciseName: exercise.title,
+        category: exercise.category,
+        sets: exercise.sets ?? 3,
+        prescription: exercise.reps ?? "10",
+        weightKg: exercise.weight ? parseFloat(exercise.weight) : undefined,
+        restSeconds: exercise.rest ? parseInt(exercise.rest, 10) : undefined,
+        scheduledDate: date,
+      })
+      refetchSchedule()
+    } catch (err) {
+      setMutationError(err instanceof Error ? err.message : "Failed to schedule exercise")
+    } finally {
+      setIsMutating(false)
+    }
+  }
+
+  const handleRemoveWorkout = async (scheduledWorkoutId: string) => {
+    setMutationError(null)
+    setIsMutating(true)
+    try {
+      await unscheduleWorkout(scheduledWorkoutId)
+      refetchSchedule()
+    } catch (err) {
+      setMutationError(err instanceof Error ? err.message : "Failed to remove workout")
+    } finally {
+      setIsMutating(false)
+    }
+  }
 
   return (
     <div className="flex min-h-full flex-col bg-background pb-8">
       {scheduleError && (
         <div className="mx-4 mt-2 rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">
           Failed to load schedule: {scheduleError}
+        </div>
+      )}
+      {mutationError && (
+        <div className="mx-4 mt-2 rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          {mutationError}
+        </div>
+      )}
+      {isMutating && (
+        <div className="mx-4 mt-2 rounded-lg border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
+          Saving…
         </div>
       )}
       {/* Header */}
@@ -393,11 +438,11 @@ function ClientProfileView({
         </h3>
         <div className="rounded-xl bg-card">
           <WorkoutCalendar
-            scheduledWorkouts={mergedSchedule}
-            availableWorkouts={libraryWorkouts}
-            onScheduleWorkout={onScheduleWorkout}
-            onScheduleExercise={onScheduleExercise}
-            onRemoveWorkout={onRemoveWorkout}
+            scheduledWorkouts={calendarSchedule}
+            availableWorkouts={availableWorkouts}
+            onScheduleWorkout={handleScheduleWorkout}
+            onScheduleExercise={handleScheduleExercise}
+            onRemoveWorkout={handleRemoveWorkout}
             clientName={client.name}
           />
         </div>
@@ -411,17 +456,19 @@ function ClientProfileView({
 export function PTCoachScreen() {
   // ─────────────────────────────────────────────────────────────────────────
   // BACKEND BOUNDARY:
-  //   - Initial client roster is loaded from Supabase via useClients().
-  //   - Per-client schedule is loaded via useScheduledWorkouts(clientId).
-  //   - Mutations (schedule/remove/add) currently only update local state.
-  //     They will NOT persist on refresh until the next pass wires up
-  //     supabase.from("scheduled_workouts").insert/delete calls.
-  //   - The "add non-client as client" flow uses purely mock data —
-  //     there's no concept of "users not yet coached by me" in the schema
-  //     yet (would need an invite/discovery system).
+  //   - Client roster: Supabase via useClients()
+  //   - Workout library: Supabase via useWorkouts()
+  //   - Per-client schedule: Supabase via useScheduledWorkouts(clientId), owned
+  //     by ClientProfileView
+  //   - Schedule mutations (add/remove workout, schedule single exercise):
+  //     real Supabase writes, owned by ClientProfileView, refetches on success
+  //   - "Add new client" flow STILL uses mock non-client users — there's no
+  //     concept of "users not yet coached by me" in the schema (would need
+  //     an invite/discovery system). handleAddClient only updates local state.
   // ─────────────────────────────────────────────────────────────────────────
 
   const { data: clientSummaries, error: clientsError } = useClients()
+  const { data: availableWorkouts, error: workoutsError } = useWorkouts()
 
   const [users, setUsers] = useState<AppUser[]>(initialUsers)
   const [searchQuery, setSearchQuery] = useState("")
@@ -478,92 +525,13 @@ export function PTCoachScreen() {
     )
   }
 
-  const handleScheduleExercise = (clientId: string, date: string, exercise: Omit<ScheduledWorkout, "id" | "date" | "status">) => {
-    const newEntry: ScheduledWorkout = {
-      id: `sw-${Date.now()}`,
-      date,
-      status: "scheduled",
-      ...exercise,
-    }
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id !== clientId ? u : { ...u, scheduledWorkouts: [...(u.scheduledWorkouts || []), newEntry] }
-      )
-    )
-    setSelectedClient((prev) =>
-      !prev || prev.id !== clientId ? prev : {
-        ...prev,
-        scheduledWorkouts: [...(prev.scheduledWorkouts || []), newEntry],
-      }
-    )
-  }
-
-  const handleScheduleWorkout = (clientId: string, date: string, workout: LibraryWorkout) => {
-    setUsers((prev) =>
-      prev.map((u) => {
-        if (u.id !== clientId) return u
-        const newWorkout: ScheduledWorkout = {
-          id: `sw-${Date.now()}`,
-          workoutId: workout.id,
-          title: workout.title,
-          category: workout.category,
-          duration: workout.duration,
-          date,
-          status: "scheduled",
-        }
-        return {
-          ...u,
-          scheduledWorkouts: [...(u.scheduledWorkouts || []), newWorkout],
-        }
-      })
-    )
-    // Update selected client reference
-    setSelectedClient((prev) => {
-      if (!prev || prev.id !== clientId) return prev
-      const newWorkout: ScheduledWorkout = {
-        id: `sw-${Date.now()}`,
-        workoutId: workout.id,
-        title: workout.title,
-        category: workout.category,
-        duration: workout.duration,
-        date,
-        status: "scheduled",
-      }
-      return {
-        ...prev,
-        scheduledWorkouts: [...(prev.scheduledWorkouts || []), newWorkout],
-      }
-    })
-  }
-
-  const handleRemoveWorkout = (clientId: string, workoutId: string) => {
-    setUsers((prev) =>
-      prev.map((u) => {
-        if (u.id !== clientId) return u
-        return {
-          ...u,
-          scheduledWorkouts: u.scheduledWorkouts?.filter((w) => w.id !== workoutId) || [],
-        }
-      })
-    )
-    setSelectedClient((prev) => {
-      if (!prev || prev.id !== clientId) return prev
-      return {
-        ...prev,
-        scheduledWorkouts: prev.scheduledWorkouts?.filter((w) => w.id !== workoutId) || [],
-      }
-    })
-  }
-
   // Client Profile View
   if (selectedClient) {
     return (
       <ClientProfileView
         client={selectedClient}
+        availableWorkouts={availableWorkouts}
         onBack={() => setSelectedClient(null)}
-        onScheduleWorkout={(date, workout) => handleScheduleWorkout(selectedClient.id, date, workout)}
-        onScheduleExercise={(date, exercise) => handleScheduleExercise(selectedClient.id, date, exercise)}
-        onRemoveWorkout={(workoutId) => handleRemoveWorkout(selectedClient.id, workoutId)}
       />
     )
   }
@@ -635,6 +603,11 @@ export function PTCoachScreen() {
         {clientsError && (
           <div className="mb-3 rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">
             Failed to load clients: {clientsError}
+          </div>
+        )}
+        {workoutsError && (
+          <div className="mb-3 rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            Failed to load workout library: {workoutsError}
           </div>
         )}
         {filteredClients.length === 0 ? (
