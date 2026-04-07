@@ -146,7 +146,8 @@ export function DashboardScreen({ onNavigateToWorkouts, onStartScheduledWorkout 
             subtext="this week"
             icon={TrendingUp}
           />
-
+    </div>
+  </section>
       {/* Next Workout CTA */}
       <section className="px-6 pb-2 pt-4">
         {nextWorkout ? (
