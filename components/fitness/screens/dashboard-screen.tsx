@@ -68,6 +68,16 @@ export function DashboardScreen({ onNavigateToWorkouts, onStartScheduledWorkout 
 
   // Greet the user by their first name, falling back to display name.
   const firstName = user.displayName.split(" ")[0]
+  // Time-of-day greeting. Computed in an effect so it uses the user's
+  // local clock and avoids a server/client hydration mismatch on initial
+  // render. Defaults to "Good morning" before the effect runs.
+  const [greeting, setGreeting] = useState("Good morning")
+  useEffect(() => {
+    const hour = new Date().getHours()
+    if (hour >= 5 && hour < 12) setGreeting("Good morning")
+    else if (hour >= 12 && hour < 18) setGreeting("Good afternoon")
+    else setGreeting("Good evening")
+  }, [])
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr + "T00:00:00")
     const daysDiff = Math.ceil((date.getTime() - new Date(todayStr + "T00:00:00").getTime()) / (1000 * 60 * 60 * 24))
@@ -82,7 +92,7 @@ export function DashboardScreen({ onNavigateToWorkouts, onStartScheduledWorkout 
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-lg">
         <div className="flex items-center justify-between px-6 py-4">
           <div>
-            <p className="text-sm text-muted-foreground">Good morning</p>
+            <p className="text-sm text-muted-foreground">{greeting}</p>
             <h1 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase text-foreground">
               {firstName}
             </h1>
