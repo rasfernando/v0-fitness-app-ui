@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react"
 import { ChevronLeft, ChevronRight, Plus, Dumbbell, Clock, X, Check, Search, Layers, ListChecks } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { LoggedSetsList } from "./logged-sets-list"
+import { useExercises, type ExerciseOption } from "@/lib/hooks/use-exercises"
 
 export interface ScheduledWorkout {
   id: string
@@ -30,16 +30,6 @@ interface CalendarWorkout {
   difficulty: "Beginner" | "Intermediate" | "Advanced"
   exercises: number
   imageUrl: string
-}
-
-interface ExerciseLibraryItem {
-  id: string
-  name: string
-  category: string
-  muscleGroup: string
-  usesWeight: boolean
-  usesReps: boolean
-  imageUrl?: string
 }
 
 interface WorkoutCalendarProps {
@@ -72,28 +62,9 @@ const statusColors: Record<string, string> = {
 
 // ─── Exercise library for single-exercise assignments ─────────────────────────
 
-const EXERCISE_LIBRARY: ExerciseLibraryItem[] = [
-  { id: "e1",  name: "Barbell Squat",      category: "Legs",       muscleGroup: "Quads, Glutes",     usesWeight: true,  usesReps: true },
-  { id: "e2",  name: "Bench Press",        category: "Chest",      muscleGroup: "Pectorals",          usesWeight: true,  usesReps: true },
-  { id: "e3",  name: "Deadlift",           category: "Back",       muscleGroup: "Hamstrings, Back",   usesWeight: true,  usesReps: true },
-  { id: "e4",  name: "Overhead Press",     category: "Shoulders",  muscleGroup: "Deltoids",           usesWeight: true,  usesReps: true },
-  { id: "e5",  name: "Pull-Up",            category: "Back",       muscleGroup: "Lats, Biceps",       usesWeight: false, usesReps: true },
-  { id: "e6",  name: "Dumbbell Lunge",     category: "Legs",       muscleGroup: "Quads, Glutes",     usesWeight: true,  usesReps: true },
-  { id: "e7",  name: "Incline DB Press",   category: "Chest",      muscleGroup: "Upper Pectorals",   usesWeight: true,  usesReps: true },
-  { id: "e8",  name: "Cable Row",          category: "Back",       muscleGroup: "Mid Back",           usesWeight: true,  usesReps: true },
-  { id: "e9",  name: "Lateral Raise",      category: "Shoulders",  muscleGroup: "Side Deltoids",      usesWeight: true,  usesReps: true },
-  { id: "e10", name: "Bicep Curl",         category: "Arms",       muscleGroup: "Biceps",             usesWeight: true,  usesReps: true },
-  { id: "e11", name: "Tricep Pushdown",    category: "Arms",       muscleGroup: "Triceps",            usesWeight: true,  usesReps: true },
-  { id: "e12", name: "Plank",             category: "Core",       muscleGroup: "Abs, Core",          usesWeight: false, usesReps: false },
-  { id: "e13", name: "Cable Crunch",       category: "Core",       muscleGroup: "Abs",                usesWeight: true,  usesReps: true },
-  { id: "e14", name: "Leg Press",          category: "Legs",       muscleGroup: "Quads",              usesWeight: true,  usesReps: true },
-  { id: "e15", name: "Romanian Deadlift",  category: "Legs",       muscleGroup: "Hamstrings",         usesWeight: true,  usesReps: true },
-  { id: "e16", name: "Face Pull",          category: "Shoulders",  muscleGroup: "Rear Delts",         usesWeight: true,  usesReps: true },
-  { id: "e17", name: "Hip Thrust",         category: "Legs",       muscleGroup: "Glutes",             usesWeight: true,  usesReps: true },
-  { id: "e18", name: "Push-Up",            category: "Chest",      muscleGroup: "Pectorals, Triceps", usesWeight: false, usesReps: true },
-]
-
-const EXERCISE_CATEGORIES = ["All", ...Array.from(new Set(EXERCISE_LIBRARY.map((e) => e.category)))]
+// EXERCISE_LIBRARY was formerly a hardcoded constant here; it's now loaded
+// from the database via useExercises() inside the AddSheet component. The
+// old constant, along with its derived EXERCISE_CATEGORIES, has been deleted.
 
 // ─── Single Exercise Config Panel ─────────────────────────────────────────────
 
@@ -103,7 +74,7 @@ function ExerciseConfigPanel({
   onBack,
   date,
 }: {
-  exercise: ExerciseLibraryItem
+  exercise: ExerciseOption
   onConfirm: (config: { sets: number; reps: string; weight: string; rest: string }) => void
   onBack: () => void
   date: string
@@ -277,7 +248,17 @@ function AddSheet({
   const [mode, setMode] = useState<AddMode>("pick_type")
   const [searchQuery, setSearchQuery] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("All")
-  const [selectedExercise, setSelectedExercise] = useState<ExerciseLibraryItem | null>(null)
+  const [selectedExercise, setSelectedExercise] = useState<ExerciseOption | null>(null)
+
+  // Exercise library from the DB. Replaces the previous hardcoded EXERCISE_LIBRARY.
+  // Loading/error states handled in the exercise_list render branch below.
+  const { data: exerciseLibrary, loading: exercisesLoading, error: exercisesError } = useExercises()
+
+  // Derive category filter options from the loaded library. Always includes "All".
+  const exerciseCategories = useMemo(() => {
+    const cats = Array.from(new Set(exerciseLibrary.map((e) => e.category))).sort()
+    return ["All", ...cats]
+  }, [exerciseLibrary])
 
   // Lock body scroll while the sheet is open so finger swipes inside the
   // sheet don't propagate to the page underneath on mobile.
@@ -297,7 +278,7 @@ function AddSheet({
       w.category.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const filteredExercises = EXERCISE_LIBRARY.filter((e) => {
+  const filteredExercises = exerciseLibrary.filter((e) => {
     const matchesSearch =
       e.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       e.muscleGroup.toLowerCase().includes(searchQuery.toLowerCase())
@@ -444,7 +425,7 @@ function AddSheet({
 
             {/* Category filter */}
             <div className="mb-3 flex gap-2 overflow-x-auto px-5 scrollbar-hide">
-              {EXERCISE_CATEGORIES.map((cat) => (
+              {exerciseCategories.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setCategoryFilter(cat)}
@@ -461,7 +442,24 @@ function AddSheet({
             </div>
 
             <div className="space-y-2 px-5">
-              {filteredExercises.map((exercise) => (
+              {exercisesLoading && (
+                <div className="py-8 text-center text-sm text-muted-foreground">
+                  Loading exercises…
+                </div>
+              )}
+              {exercisesError && !exercisesLoading && (
+                <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                  Failed to load exercises: {exercisesError}
+                </div>
+              )}
+              {!exercisesLoading && !exercisesError && filteredExercises.length === 0 && (
+                <div className="py-8 text-center text-sm text-muted-foreground">
+                  {searchQuery || categoryFilter !== "All"
+                    ? "No exercises match your search"
+                    : "No exercises in the library yet"}
+                </div>
+              )}
+              {!exercisesLoading && !exercisesError && filteredExercises.map((exercise) => (
                 <button
                   key={exercise.id}
                   onClick={() => { setSelectedExercise(exercise); setMode("exercise_config") }}
@@ -472,7 +470,7 @@ function AddSheet({
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="truncate font-semibold text-sm text-foreground">{exercise.name}</p>
-                    <p className="text-xs text-muted-foreground">{exercise.muscleGroup}</p>
+                    <p className="text-xs text-muted-foreground">{exercise.muscleGroup || exercise.category}</p>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
                     <span className="rounded-full bg-card px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
@@ -518,9 +516,6 @@ export function WorkoutCalendar({
   const [currentYear, setCurrentYear] = useState(today.getFullYear())
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [showAddSheet, setShowAddSheet] = useState(false)
-  // Which completed workout's logged sets are currently expanded for review.
-  // Only one at a time — collapses any other expanded one.
-  const [expandedWorkoutId, setExpandedWorkoutId] = useState<string | null>(null)
 
   const daysInMonth = useMemo(() => {
     const firstDay = new Date(currentYear, currentMonth, 1)
@@ -699,90 +694,59 @@ export function WorkoutCalendar({
 
           {selectedDateWorkouts.length > 0 ? (
             <div className="mt-3 space-y-2">
-              {selectedDateWorkouts.map((item) => {
-                const isCompleted = item.status === "completed"
-                const isExpanded = expandedWorkoutId === item.id
-                const isExpandable = isCompleted && item.type !== "single_exercise"
-                return (
-                  <div key={item.id} className="rounded-xl bg-card">
-                    <div
-                      className={cn(
-                        "flex items-start gap-3 p-3",
-                        isExpandable && "cursor-pointer hover:bg-secondary/50 transition-colors rounded-xl"
-                      )}
-                      onClick={
-                        isExpandable
-                          ? () => setExpandedWorkoutId(isExpanded ? null : item.id)
-                          : undefined
-                      }
-                    >
-                      <div className={cn(
-                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
-                        item.status === "completed" ? "bg-emerald-500/20"
-                          : item.status === "missed" ? "bg-red-500/20"
-                          : item.type === "single_exercise" ? "bg-primary/10"
-                          : "bg-primary/20"
-                      )}>
-                        {item.type === "single_exercise"
-                          ? <ListChecks className={cn("h-5 w-5", item.status === "completed" ? "text-emerald-400" : "text-primary")} />
-                          : <Dumbbell className={cn("h-5 w-5", item.status === "completed" ? "text-emerald-400" : item.status === "missed" ? "text-red-400" : "text-primary")} />
-                        }
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="truncate font-semibold text-sm text-foreground">{item.title}</p>
-                          {item.type === "single_exercise" && (
-                            <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-primary">
-                              Exercise
-                            </span>
-                          )}
-                        </div>
-                        {item.type === "single_exercise" ? (
-                          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-                            <span>{item.sets} sets</span>
-                            {item.reps && <span>{item.reps} reps</span>}
-                            {item.weight && <span className="text-primary">{item.weight}</span>}
-                            {item.rest && <span>Rest: {item.rest}</span>}
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span>{item.category}</span>
-                            <span>·</span>
-                            <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{item.duration}</span>
-                            {isExpandable && (
-                              <>
-                                <span>·</span>
-                                <span className="text-primary">{isExpanded ? "Hide" : "Tap to view"}</span>
-                              </>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      {!readOnly && item.status === "scheduled" && onRemoveWorkout && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            onRemoveWorkout(item.id)
-                          }}
-                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary text-muted-foreground hover:bg-destructive/20 hover:text-destructive"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      )}
-                      {item.status === "completed" && (
-                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/20">
-                          <Check className="h-3.5 w-3.5 text-emerald-400" />
+              {selectedDateWorkouts.map((item) => (
+                <div key={item.id} className="flex items-start gap-3 rounded-xl bg-card p-3">
+                  <div className={cn(
+                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
+                    item.status === "completed" ? "bg-emerald-500/20"
+                      : item.status === "missed" ? "bg-red-500/20"
+                      : item.type === "single_exercise" ? "bg-primary/10"
+                      : "bg-primary/20"
+                  )}>
+                    {item.type === "single_exercise"
+                      ? <ListChecks className={cn("h-5 w-5", item.status === "completed" ? "text-emerald-400" : "text-primary")} />
+                      : <Dumbbell className={cn("h-5 w-5", item.status === "completed" ? "text-emerald-400" : item.status === "missed" ? "text-red-400" : "text-primary")} />
+                    }
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="truncate font-semibold text-sm text-foreground">{item.title}</p>
+                      {item.type === "single_exercise" && (
+                        <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-primary">
+                          Exercise
                         </span>
                       )}
                     </div>
-                    {isExpanded && (
-                      <div className="border-t border-border/50 px-3 pb-3">
-                        <LoggedSetsList scheduledWorkoutId={item.id} />
+                    {item.type === "single_exercise" ? (
+                      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                        <span>{item.sets} sets</span>
+                        {item.reps && <span>{item.reps} reps</span>}
+                        {item.weight && <span className="text-primary">{item.weight}</span>}
+                        {item.rest && <span>Rest: {item.rest}</span>}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>{item.category}</span>
+                        <span>·</span>
+                        <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{item.duration}</span>
                       </div>
                     )}
                   </div>
-                )
-              })}
+                  {!readOnly && item.status === "scheduled" && onRemoveWorkout && (
+                    <button
+                      onClick={() => onRemoveWorkout(item.id)}
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary text-muted-foreground hover:bg-destructive/20 hover:text-destructive"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                  {item.status === "completed" && (
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/20">
+                      <Check className="h-3.5 w-3.5 text-emerald-400" />
+                    </span>
+                  )}
+                </div>
+              ))}
             </div>
           ) : (
             <div className="mt-4 flex flex-col items-center py-6 text-center">
