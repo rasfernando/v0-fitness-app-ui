@@ -30,6 +30,9 @@ export interface ProgressData {
   sessionsThisWeek: number
   currentStreakWeeks: number
   totalSetsLogged: number
+  // This-week aggregates (added for dashboard tiles)
+  secondsTrainedThisWeek: number
+  volumeLoadThisWeekKg: number  // sum of reps × weight, weighted sets only
   // Strength trend for the main lift
   mainLiftName: string | null         // null = not enough data
   mainLiftHistory: StrengthDataPoint[]
@@ -227,9 +230,27 @@ export function useProgressData(): UseProgressDataResult {
 
     // Sessions this week (Monday-anchored)
     const nowKey = weekKey(new Date().toISOString())
-    const sessionsThisWeek = rawSessions.filter(
+    const sessionsThisWeekRows = rawSessions.filter(
       (s) => weekKey(s.completedAt) === nowKey
-    ).length
+    )
+    const sessionsThisWeek = sessionsThisWeekRows.length
+
+    // Total seconds trained this week — sum durations, treat null as 0.
+    const secondsTrainedThisWeek = sessionsThisWeekRows.reduce(
+      (sum, s) => sum + (s.durationSeconds ?? 0),
+      0
+    )
+
+    // Volume load this week: sum of reps × weight across all sets logged
+    // in this-week sessions. Bodyweight / time-based sets contribute 0
+    // because their weight or reps is null (intentional — see hook docs).
+    const thisWeekSessionIds = new Set(sessionsThisWeekRows.map((s) => s.id))
+    const volumeLoadThisWeekKg = rawSets.reduce((sum, set) => {
+      if (!thisWeekSessionIds.has(set.sessionId)) return sum
+      if (set.repsCompleted === null || set.weightKgUsed === null) return sum
+      if (set.repsCompleted <= 0 || set.weightKgUsed <= 0) return sum
+      return sum + set.repsCompleted * set.weightKgUsed
+    }, 0)
 
     // Current streak: consecutive weeks with ≥1 session, ending this week or last
     const currentStreakWeeks = computeWeekStreak(rawSessions)
@@ -315,6 +336,8 @@ export function useProgressData(): UseProgressDataResult {
       sessionsThisWeek,
       currentStreakWeeks,
       totalSetsLogged,
+      secondsTrainedThisWeek,
+      volumeLoadThisWeekKg,
       mainLiftName,
       mainLiftHistory,
       recentSessions,
