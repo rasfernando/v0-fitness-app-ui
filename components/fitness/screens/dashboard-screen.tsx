@@ -9,14 +9,6 @@ import { useScheduledWorkouts } from "@/lib/hooks/use-scheduled-workouts"
 import { cn } from "@/lib/utils"
 
 
-// scheduledWorkouts is now loaded from Supabase via useScheduledWorkouts() — see below.
-
-const recentActivity = [
-  { name: "Leg Day Destroyer", date: "Today", duration: "52 min" },
-  { name: "Morning Cardio", date: "Yesterday", duration: "30 min" },
-  { name: "Full Body Strength", date: "Mar 24", duration: "48 min" },
-]
-
 interface DashboardScreenProps {
   onNavigateToWorkouts?: () => void
   onStartScheduledWorkout?: (scheduledId: string, title: string) => void
@@ -56,7 +48,14 @@ export function DashboardScreen({ onNavigateToWorkouts, onStartScheduledWorkout 
   const nextWorkout = scheduledWorkouts
     .filter(w => w.status === "scheduled" && w.date >= todayStr)
     .sort((a, b) => a.date.localeCompare(b.date))[0] ?? null
-
+// Most recently completed workouts. We use the scheduled_date here
+  // (not the actual session completed_at) — the gap is normally 0-1 day
+  // for an active client and avoids an extra query. Sort newest first.
+  const recentCompletedWorkouts = scheduledWorkouts
+    .filter(w => w.status === "completed")
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 5)
+  
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr + "T00:00:00")
     const daysDiff = Math.ceil((date.getTime() - new Date(todayStr + "T00:00:00").getTime()) / (1000 * 60 * 60 * 24))
@@ -251,24 +250,29 @@ export function DashboardScreen({ onNavigateToWorkouts, onStartScheduledWorkout 
                 <p className="text-xs text-muted-foreground">Your coach will assign workouts to your calendar</p>
               </div>
             )
-          ) : (
-            recentActivity.map((activity, index) => (
-              <button
-                key={index}
-                className="flex w-full items-center gap-4 rounded-xl bg-card p-4 transition-colors hover:bg-secondary"
+          ) : recentCompletedWorkouts.length > 0 ? (
+            recentCompletedWorkouts.map((workout) => (
+              <div
+                key={workout.id}
+                className="flex w-full items-center gap-4 rounded-xl bg-card p-4"
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                  <Flame className="h-6 w-6 text-primary" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10">
+                  <Flame className="h-6 w-6 text-emerald-400" />
                 </div>
                 <div className="flex-1 text-left">
-                  <h4 className="font-semibold text-foreground">{activity.name}</h4>
+                  <h4 className="font-semibold text-foreground">{workout.title}</h4>
                   <p className="text-sm text-muted-foreground">
-                    {activity.date} · {activity.duration}
+                    {formatDate(workout.date)} · {workout.duration}
                   </p>
                 </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </button>
+              </div>
             ))
+          ) : (
+            <div className="flex flex-col items-center py-8 text-center">
+              <Flame className="h-10 w-10 text-muted-foreground" />
+              <p className="mt-2 text-sm text-muted-foreground">No completed workouts yet</p>
+              <p className="text-xs text-muted-foreground">Finish a session to see it here</p>
+            </div>
           )}
         </div>
       </section>
