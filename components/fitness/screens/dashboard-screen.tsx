@@ -6,6 +6,8 @@ import { Bell, Flame, Timer, Trophy, TrendingUp, Calendar, ChevronRight, Dumbbel
 import { StatCard } from "@/components/fitness/stat-card"
 import { WorkoutCalendar } from "@/components/fitness/workout-calendar"
 import { useScheduledWorkouts } from "@/lib/hooks/use-scheduled-workouts"
+import { useProgressData } from "@/lib/hooks/use-progress-data"
+import { useDevUser } from "@/lib/dev-user"
 import { cn } from "@/lib/utils"
 
 
@@ -21,7 +23,9 @@ export function DashboardScreen({ onNavigateToWorkouts, onStartScheduledWorkout 
 
   // Real data from Supabase, scoped to the current dev user.
   const { data: scheduledWorkoutsRaw, error: scheduleError } = useScheduledWorkouts()
-
+// Headline-stats data and current user, both for the dashboard tiles.
+  const { user } = useDevUser()
+  const { data: progressData } = useProgressData()
   // Normalize the DB's 4 statuses down to the 3 the calendar component understands.
   // TODO: align WorkoutCalendar's status type with the DB enum.
   const scheduledWorkouts = useMemo(
@@ -55,7 +59,15 @@ export function DashboardScreen({ onNavigateToWorkouts, onStartScheduledWorkout 
     .filter(w => w.status === "completed")
     .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, 5)
-  
+  // Derived display values for the four stat tiles. All read from
+  // useProgressData, which is null on first load and for non-client roles.
+  const statsThisWeek = progressData?.sessionsThisWeek ?? 0
+  const statsStreak = progressData?.currentStreakWeeks ?? 0
+  const statsTimeTrained = formatTrainingTime(progressData?.secondsTrainedThisWeek ?? 0)
+  const statsVolume = formatVolumeKg(progressData?.volumeLoadThisWeekKg ?? 0)
+
+  // Greet the user by their first name, falling back to display name.
+  const firstName = user.displayName.split(" ")[0]
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr + "T00:00:00")
     const daysDiff = Math.ceil((date.getTime() - new Date(todayStr + "T00:00:00").getTime()) / (1000 * 60 * 60 * 24))
@@ -72,7 +84,7 @@ export function DashboardScreen({ onNavigateToWorkouts, onStartScheduledWorkout 
           <div>
             <p className="text-sm text-muted-foreground">Good morning</p>
             <h1 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase text-foreground">
-              Sarah
+              {firstName}
             </h1>
           </div>
           <div className="flex items-center gap-3">
@@ -98,36 +110,30 @@ export function DashboardScreen({ onNavigateToWorkouts, onStartScheduledWorkout 
       )}
 
       {/* Quick Stats */}
-      <section className="px-6 py-4">
-        <div className="grid grid-cols-2 gap-3">
-          <StatCard
+      <StatCard
             label="This Week"
-            value="4"
+            value={String(statsThisWeek)}
             subtext="workouts"
             icon={Flame}
-            trend={{ value: "12%", positive: true }}
           />
           <StatCard
             label="Streak"
-            value="12"
-            subtext="days"
+            value={String(statsStreak)}
+            subtext={statsStreak === 1 ? "week" : "weeks"}
             icon={Trophy}
           />
           <StatCard
             label="Time Trained"
-            value="3.5h"
+            value={statsTimeTrained}
             subtext="this week"
             icon={Timer}
           />
           <StatCard
-            label="Calories"
-            value="2,840"
-            subtext="burned"
+            label="Volume"
+            value={statsVolume}
+            subtext="this week"
             icon={TrendingUp}
-            trend={{ value: "8%", positive: true }}
           />
-        </div>
-      </section>
 
       {/* Next Workout CTA */}
       <section className="px-6 pb-2 pt-4">
@@ -288,7 +294,23 @@ export function DashboardScreen({ onNavigateToWorkouts, onStartScheduledWorkout 
     </div>
   )
 }
+// ─── Stat formatting helpers ────────────────────────────────────────────
 
+function formatTrainingTime(seconds: number): string {
+  if (seconds <= 0) return "0m"
+  const totalMinutes = Math.floor(seconds / 60)
+  if (totalMinutes < 60) return `${totalMinutes}m`
+  const hours = Math.floor(totalMinutes / 60)
+  const mins = totalMinutes % 60
+  if (mins === 0) return `${hours}h`
+  return `${hours}h ${mins}m`
+}
+
+function formatVolumeKg(kg: number): string {
+  if (kg <= 0) return "0kg"
+  // Round to nearest kg, format with thousands separator
+  return `${Math.round(kg).toLocaleString()}kg`
+}
 // Bottom-sheet modal hosting the calendar in client view.
 // Extracted into its own component so it can own its scroll-target ref
 // and body-scroll-lock effect cleanly.
