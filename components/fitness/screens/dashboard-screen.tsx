@@ -12,11 +12,10 @@ import { cn } from "@/lib/utils"
 
 
 interface DashboardScreenProps {
-  onNavigateToWorkouts?: () => void
   onStartScheduledWorkout?: (scheduledId: string, title: string) => void
 }
 
-export function DashboardScreen({ onNavigateToWorkouts, onStartScheduledWorkout }: DashboardScreenProps) {
+export function DashboardScreen({ onStartScheduledWorkout }: DashboardScreenProps) {
   // v3 — no ProgrammeCard, uses nextWorkout
   const [showCalendar, setShowCalendar] = useState(false)
   const [activityTab, setActivityTab] = useState<"upcoming" | "recent">("upcoming")
