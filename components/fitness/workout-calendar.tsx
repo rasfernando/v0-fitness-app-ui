@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { ChevronLeft, ChevronRight, Plus, Dumbbell, Clock, X, Check, Search, Layers, ListChecks } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -278,6 +278,16 @@ function AddSheet({
   const [categoryFilter, setCategoryFilter] = useState("All")
   const [selectedExercise, setSelectedExercise] = useState<ExerciseLibraryItem | null>(null)
 
+  // Lock body scroll while the sheet is open so finger swipes inside the
+  // sheet don't propagate to the page underneath on mobile.
+  useEffect(() => {
+    const original = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.body.style.overflow = original
+    }
+  }, [])
+
   const dateObj = new Date(selectedDate + "T00:00:00")
 
   const filteredWorkouts = availableWorkouts.filter(
@@ -321,7 +331,7 @@ function AddSheet({
   return (
     <div className="fixed inset-0 z-40 flex flex-col pb-20">
       <div className="flex-1 bg-background/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="max-h-[85vh] overflow-y-auto rounded-t-2xl bg-card shadow-2xl scrollbar-hide safe-area-pb">
+      <div className="max-h-[85vh] overflow-y-auto overscroll-contain rounded-t-2xl bg-card shadow-2xl scrollbar-hide safe-area-pb">
         {/* Handle */}
         <div className="flex justify-center pt-3">
           <div className="h-1 w-10 rounded-full bg-border" />
