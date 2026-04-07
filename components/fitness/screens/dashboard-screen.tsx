@@ -49,9 +49,10 @@ const recentActivity = [
 
 interface DashboardScreenProps {
   onNavigateToWorkouts?: () => void
+  onStartScheduledWorkout?: (scheduledId: string, title: string) => void
 }
 
-export function DashboardScreen({ onNavigateToWorkouts }: DashboardScreenProps) {
+export function DashboardScreen({ onNavigateToWorkouts, onStartScheduledWorkout }: DashboardScreenProps) {
   // v3 — no ProgrammeCard, uses nextWorkout
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [showCalendar, setShowCalendar] = useState(false)
@@ -167,7 +168,10 @@ export function DashboardScreen({ onNavigateToWorkouts }: DashboardScreenProps) 
       {/* Next Workout CTA */}
       <section className="px-6 pb-2 pt-4">
         {nextWorkout ? (
-          <button className="group w-full overflow-hidden rounded-2xl bg-card ring-1 ring-border transition-all hover:ring-primary/50">
+          <button
+            onClick={() => onStartScheduledWorkout?.(nextWorkout.id, nextWorkout.title)}
+            className="group w-full overflow-hidden rounded-2xl bg-card ring-1 ring-border transition-all hover:ring-primary/50"
+          >
             <div className="flex items-center gap-4 p-4">
               <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-primary">
                 <Play className="ml-1 h-7 w-7 text-primary-foreground" />
@@ -250,6 +254,7 @@ export function DashboardScreen({ onNavigateToWorkouts }: DashboardScreenProps) 
               upcomingWorkouts.map((workout) => (
                 <button
                   key={workout.id}
+                  onClick={() => onStartScheduledWorkout?.(workout.id, workout.title)}
                   className="flex w-full items-center gap-4 rounded-xl bg-card p-4 text-left transition-colors hover:bg-secondary"
                 >
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
