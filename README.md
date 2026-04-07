@@ -23,10 +23,12 @@ pnpm install
 
 1. Go to <https://supabase.com> and create a new project (free tier is fine).
 2. Once it's ready, open the **SQL Editor**.
-3. Open `supabase/migrations/0001_initial_schema.sql` from this repo, copy the
-   whole file, paste it into the SQL editor, and click **Run**.
-4. Verify in the Table Editor that you have 8 tables and the `profiles` table
-   has 3 rows (Sam Carter, Alex Johnson, Jordan Miller).
+3. Run `supabase/migrations/0001_initial_schema.sql` first — copy the file
+   contents, paste into the SQL editor, click **Run**.
+4. Then run `supabase/migrations/0002_align_exercise_library.sql` the same way.
+5. Verify in the Table Editor that you have 8 tables and the `profiles` table
+   has 3 rows (Sam Carter, Alex Johnson, Jordan Miller), and the `exercises`
+   table has ~20 rows.
 
 ### 3. Set environment variables
 
@@ -66,20 +68,27 @@ Supabase `useUser()` equivalent — that's it.
 
 ## What's wired up vs what's still mocked
 
-### Real (reads from Supabase)
+### Real (reads + writes Supabase)
 
-- Client dashboard's scheduled-workouts list and calendar
-- PT's client roster
-- PT's per-client schedule view (when you tap into a client)
-- All schedule counts and stats
+- Client dashboard's scheduled-workouts list and calendar (read)
+- PT's client roster (read)
+- PT's per-client schedule view (read)
+- PT's workout library (read — via useWorkouts hook)
+- All schedule counts and stats (read)
+- **PT scheduling a workout for a client (write — persists)**
+- **PT removing a scheduled workout (write — persists)**
+- **PT scheduling a single ad-hoc exercise** (write — creates a hidden one-off
+  workout under the hood, then schedules it; persists)
 
 ### Still mocked / in-memory only
 
-- **PT mutations** — scheduling, removing, adding clients all update local
-  React state but DO NOT persist. Refresh the page and changes vanish.
-  See the boundary comment at the top of `pt-coach-screen.tsx`.
 - **Auth** — entirely fake; the dev user switcher is the whole auth system.
-- **Workout library** in PT view — `libraryWorkouts` constant in `pt-coach-screen.tsx`.
+- **"Add new client" flow** — searches a hardcoded list of fake non-client
+  users. There's no concept of "users not yet coached by me" in the schema
+  yet (would need an invite/discovery system).
+- **The exercise library inside `WorkoutCalendar`** is still a hardcoded
+  constant in the component. Migration `0002` aligns the DB names to match,
+  but they can drift again. Long-term: load from DB.
 - **Exercise library** in PT builder — `exerciseLibrary` constant in `pt-builder-screen.tsx`.
 - **Workout detail screen** — uses hardcoded `exerciseData` constant.
 - **Workout player** — purely UI, doesn't log actual sets to `exercise_sets`.
