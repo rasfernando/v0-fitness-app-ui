@@ -120,6 +120,8 @@ export function DashboardScreen({ onNavigateToWorkouts, onStartScheduledWorkout 
       )}
 
       {/* Quick Stats */}
+  <section className="px-6 pb-2 pt-2">
+    <div className="grid grid-cols-2 gap-3">
       <StatCard
             label="This Week"
             value={String(statsThisWeek)}
