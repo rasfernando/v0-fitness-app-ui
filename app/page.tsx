@@ -13,7 +13,7 @@ import { BottomNav } from "@/components/fitness/bottom-nav"
 import { cn } from "@/lib/utils"
 
 type Screen = "welcome" | "signin" | "signup" | "dashboard" | "workouts" | "workout-detail" | "workout-player" | "build" | "progress" | "profile" | "pt-clients" | "pt-builder"
-type NavTab = "home" | "workouts" | "build" | "progress" | "profile" | "pt-clients" | "pt-builder"
+type NavTab = "home" | "workouts" | "start" | "progress" | "profile" | "pt-clients" | "pt-builder"
 type AppMode = "client" | "pt"
 
 function ModeToggle({ mode, onChange }: { mode: AppMode; onChange: (m: AppMode) => void }) {
@@ -82,8 +82,8 @@ export default function FitnessApp() {
       case "workouts":
         setCurrentScreen("workouts")
         break
-      case "build":
-        setCurrentScreen("build")
+      case "start":
+        setCurrentScreen("workout-player")
         break
       case "progress":
         setCurrentScreen("progress")
