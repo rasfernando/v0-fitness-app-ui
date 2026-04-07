@@ -5,7 +5,7 @@ import { WelcomeScreen } from "@/components/fitness/screens/welcome-screen"
 import { AuthScreen } from "@/components/fitness/screens/auth-screen"
 import { DashboardScreen } from "@/components/fitness/screens/dashboard-screen"
 import { WorkoutLibraryScreen, type Workout } from "@/components/fitness/screens/workout-library-screen"
-import { WorkoutDetailScreen, exerciseData } from "@/components/fitness/screens/workout-detail-screen"
+import { WorkoutDetailScreen } from "@/components/fitness/screens/workout-detail-screen"
 import { WorkoutPlayerScreen } from "@/components/fitness/screens/workout-player-screen"
 import { PTCoachScreen } from "@/components/fitness/screens/pt-coach-screen"
 import { PTBuilderScreen } from "@/components/fitness/screens/pt-builder-screen"
@@ -51,6 +51,12 @@ export default function FitnessApp() {
   const [appMode, setAppMode] = useState<AppMode>("client")
   const [currentScreen, setCurrentScreen] = useState<Screen>("welcome")
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null)
+  // ID of the scheduled_workouts row the player is logging against. Set when
+  // the user taps a scheduled workout from the dashboard. Cleared on completion
+  // or exit. Separate from selectedWorkout (which is a library template, not
+  // a scheduled instance).
+  const [activeScheduledWorkoutId, setActiveScheduledWorkoutId] = useState<string | null>(null)
+  const [activeScheduledWorkoutTitle, setActiveScheduledWorkoutTitle] = useState<string>("")
   const [activeTab, setActiveTab] = useState<NavTab>("home")
   const [ptActiveTab, setPtActiveTab] = useState<NavTab>("pt-clients")
 
@@ -123,6 +129,16 @@ export default function FitnessApp() {
     setCurrentScreen("dashboard")
     setActiveTab("home")
     setSelectedWorkout(null)
+    setActiveScheduledWorkoutId(null)
+    setActiveScheduledWorkoutTitle("")
+  }
+
+  // Called when the client taps a scheduled workout from the dashboard.
+  // Stores the scheduled_workouts.id so the player knows what to log against.
+  const handleStartScheduledWorkout = (scheduledId: string, title: string) => {
+    setActiveScheduledWorkoutId(scheduledId)
+    setActiveScheduledWorkoutTitle(title)
+    setCurrentScreen("workout-player")
   }
 
   const showBottomNav = ["dashboard", "workouts", "build", "progress", "profile"].includes(currentScreen)
@@ -173,7 +189,10 @@ export default function FitnessApp() {
       )}
 
       {currentScreen === "dashboard" && (
-        <DashboardScreen onNavigateToWorkouts={() => handleNavigation("workouts")} />
+        <DashboardScreen
+          onNavigateToWorkouts={() => handleNavigation("workouts")}
+          onStartScheduledWorkout={handleStartScheduledWorkout}
+        />
       )}
 
       {currentScreen === "workouts" && (
@@ -188,10 +207,10 @@ export default function FitnessApp() {
         />
       )}
 
-      {currentScreen === "workout-player" && selectedWorkout && (
+      {currentScreen === "workout-player" && (
         <WorkoutPlayerScreen
-          workoutTitle={selectedWorkout.title}
-          exercises={exerciseData}
+          scheduledWorkoutId={activeScheduledWorkoutId}
+          workoutTitle={activeScheduledWorkoutTitle || selectedWorkout?.title || ""}
           onExit={handleExitWorkout}
           onComplete={handleCompleteWorkout}
         />
