@@ -79,6 +79,12 @@ Supabase `useUser()` equivalent — that's it.
 - **PT removing a scheduled workout (write — persists)**
 - **PT scheduling a single ad-hoc exercise** (write — creates a hidden one-off
   workout under the hood, then schedules it; persists)
+- **Client tapping a scheduled workout → workout player loads the real
+  prescription** (read)
+- **Client logging actual reps + weight per set** — writes to `exercise_sets`,
+  per-set, immediately. Closing the tab mid-workout won't lose logged sets.
+- **Client finishing a workout** — marks `workout_sessions.completed_at` and
+  flips `scheduled_workouts.status` to `completed`.
 
 ### Still mocked / in-memory only
 
@@ -90,11 +96,27 @@ Supabase `useUser()` equivalent — that's it.
   constant in the component. Migration `0002` aligns the DB names to match,
   but they can drift again. Long-term: load from DB.
 - **Exercise library** in PT builder — `exerciseLibrary` constant in `pt-builder-screen.tsx`.
-- **Workout detail screen** — uses hardcoded `exerciseData` constant.
-- **Workout player** — purely UI, doesn't log actual sets to `exercise_sets`.
+- **Workout detail screen** — uses hardcoded `exerciseData` constant. The "Start
+  Workout" button on this screen leads to the player with no scheduled workout
+  selected, which now shows an empty state. Needs rethinking — possibly the
+  whole workout-detail screen should be retired in favour of going straight
+  from the dashboard tap → player.
+- **PT workout builder** — purely UI, doesn't insert into the workouts table.
 - **Dashboard "featured workouts"** — hardcoded array.
+- **Dashboard "Recent activity"** — hardcoded array. Should be derived from
+  `workout_sessions` once those start accumulating.
 - **Profile, Progress, Build screens** — placeholder "coming soon" stubs.
+  Progress screen is the obvious next thing to build now that real session
+  data is being logged.
 - **The user's name "Sarah" in the dashboard header** — hardcoded.
+
+### Workout player features removed in this version (to add back later)
+
+The previous workout player had a play/pause button, a between-set rest
+timer countdown, a "skip rest" button, exercise list overlay, and free
+navigation between exercises. The current player is a simpler linear walk
+focused on getting real session data logged. The UX features can come back
+in a follow-up pass — they're not blocked by the data layer.
 
 ## Schema
 
