@@ -53,6 +53,13 @@ export interface LogSetInput {
   repsCompleted: number | null
   weightKgUsed: number | null
   rpe?: number | null
+  // Prescription snapshot — captured at the moment the set is logged so
+  // historical views stay accurate even if the template is edited later.
+  // Optional because older callers may not provide them; when omitted, the
+  // snapshot columns are written as null and the reader falls back to the
+  // current template value. See migration 0005 for schema details.
+  prescribedReps?: string | null
+  prescribedWeightKg?: number | null
 }
 
 export async function logExerciseSet(input: LogSetInput): Promise<void> {
@@ -69,6 +76,8 @@ export async function logExerciseSet(input: LogSetInput): Promise<void> {
         reps_completed: input.repsCompleted,
         weight_kg_used: input.weightKgUsed,
         rpe: input.rpe ?? null,
+        prescribed_reps: input.prescribedReps ?? null,
+        prescribed_weight_kg: input.prescribedWeightKg ?? null,
         // completed_at defaults to now() in the schema
       },
       {
