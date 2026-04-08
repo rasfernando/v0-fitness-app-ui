@@ -1,0 +1,116 @@
+-- =============================================================================
+-- 0003 — Seed comprehensive exercise library
+-- =============================================================================
+-- Run this AFTER the previous migrations.
+--
+-- Adds ~70 new global exercises across all major movement patterns.
+-- The 10 exercises already seeded in 0001/0002 are left alone — they don't
+-- conflict because the unique index on lower(name) is only for created_by
+-- is null (global) AND the existing rows are already global.
+--
+-- uses_weight / uses_reps columns drive the workout player UI:
+--   uses_weight=true, uses_reps=true   → normal: 3×10 @ 60kg (most exercises)
+--   uses_weight=false, uses_reps=true  → bodyweight reps: 3×10 push-ups
+--   uses_weight=true, uses_reps=false  → weighted carries/time: 40m @ 20kg
+--   uses_weight=false, uses_reps=false → time-only: 3×45s plank
+--
+-- image_url is NULL for all new exercises — proper image strategy deferred.
+-- =============================================================================
+
+insert into exercises (id, name, category, muscle_group, uses_weight, uses_reps) values
+
+-- ─── Lower body: squat pattern ─────────────────────────────────────────────
+('a0000003-0000-0000-0000-000000000001', 'Barbell Back Squat',      'Legs', 'Quads, Glutes',    true,  true),
+('a0000003-0000-0000-0000-000000000002', 'Front Squat',             'Legs', 'Quads',            true,  true),
+('a0000003-0000-0000-0000-000000000003', 'Goblet Squat',            'Legs', 'Quads, Glutes',    true,  true),
+('a0000003-0000-0000-0000-000000000004', 'Leg Press',               'Legs', 'Quads',            true,  true),
+('a0000003-0000-0000-0000-000000000005', 'Hack Squat',              'Legs', 'Quads',            true,  true),
+
+-- ─── Lower body: hinge pattern ─────────────────────────────────────────────
+('a0000003-0000-0000-0000-000000000010', 'Conventional Deadlift',   'Back', 'Posterior Chain',  true,  true),
+('a0000003-0000-0000-0000-000000000011', 'Romanian Deadlift',       'Legs', 'Hamstrings, Glutes', true, true),
+('a0000003-0000-0000-0000-000000000012', 'Sumo Deadlift',           'Back', 'Posterior Chain',  true,  true),
+('a0000003-0000-0000-0000-000000000013', 'Single-Leg Romanian Deadlift', 'Legs', 'Hamstrings, Glutes', true, true),
+('a0000003-0000-0000-0000-000000000014', 'Kettlebell Swing',        'Legs', 'Posterior Chain',  true,  true),
+('a0000003-0000-0000-0000-000000000015', 'Good Morning',            'Legs', 'Hamstrings, Lower Back', true, true),
+
+-- ─── Lower body: unilateral ───────────────────────────────────────────────
+('a0000003-0000-0000-0000-000000000020', 'Walking Lunge',           'Legs', 'Quads, Glutes',    true,  true),
+('a0000003-0000-0000-0000-000000000021', 'Reverse Lunge',           'Legs', 'Quads, Glutes',    true,  true),
+('a0000003-0000-0000-0000-000000000022', 'Bulgarian Split Squat',   'Legs', 'Quads, Glutes',    true,  true),
+('a0000003-0000-0000-0000-000000000023', 'Step-Up',                 'Legs', 'Quads, Glutes',    true,  true),
+
+-- ─── Lower body: accessories ──────────────────────────────────────────────
+('a0000003-0000-0000-0000-000000000030', 'Leg Extension',           'Legs', 'Quads',            true,  true),
+('a0000003-0000-0000-0000-000000000031', 'Leg Curl',                'Legs', 'Hamstrings',       true,  true),
+('a0000003-0000-0000-0000-000000000032', 'Hip Thrust',              'Legs', 'Glutes',           true,  true),
+('a0000003-0000-0000-0000-000000000033', 'Glute Bridge',            'Legs', 'Glutes',           true,  true),
+('a0000003-0000-0000-0000-000000000034', 'Calf Raise',              'Legs', 'Calves',           true,  true),
+
+-- ─── Upper body: horizontal push ──────────────────────────────────────────
+('a0000003-0000-0000-0000-000000000040', 'Barbell Bench Press',     'Chest', 'Chest',           true,  true),
+('a0000003-0000-0000-0000-000000000041', 'Incline Bench Press',     'Chest', 'Upper Chest',     true,  true),
+('a0000003-0000-0000-0000-000000000042', 'Dumbbell Bench Press',    'Chest', 'Chest',           true,  true),
+('a0000003-0000-0000-0000-000000000043', 'Push-Up',                 'Chest', 'Chest, Triceps',  false, true),
+('a0000003-0000-0000-0000-000000000044', 'Dumbbell Fly',            'Chest', 'Chest',           true,  true),
+
+-- ─── Upper body: horizontal pull ──────────────────────────────────────────
+('a0000003-0000-0000-0000-000000000050', 'Barbell Row',             'Back', 'Mid Back, Lats',   true,  true),
+('a0000003-0000-0000-0000-000000000051', 'Dumbbell Row',            'Back', 'Mid Back, Lats',   true,  true),
+('a0000003-0000-0000-0000-000000000052', 'Seated Cable Row',        'Back', 'Mid Back',         true,  true),
+('a0000003-0000-0000-0000-000000000053', 'T-Bar Row',               'Back', 'Mid Back',         true,  true),
+('a0000003-0000-0000-0000-000000000054', 'Inverted Row',            'Back', 'Mid Back',         false, true),
+
+-- ─── Upper body: vertical push ────────────────────────────────────────────
+('a0000003-0000-0000-0000-000000000060', 'Dumbbell Shoulder Press', 'Shoulders', 'Deltoids',    true,  true),
+('a0000003-0000-0000-0000-000000000061', 'Arnold Press',            'Shoulders', 'Deltoids',    true,  true),
+('a0000003-0000-0000-0000-000000000062', 'Push Press',              'Shoulders', 'Deltoids, Triceps', true, true),
+
+-- ─── Upper body: vertical pull ────────────────────────────────────────────
+('a0000003-0000-0000-0000-000000000070', 'Chin-Up',                 'Back', 'Lats, Biceps',     true,  true),
+('a0000003-0000-0000-0000-000000000071', 'Lat Pulldown',            'Back', 'Lats',             true,  true),
+('a0000003-0000-0000-0000-000000000072', 'Single-Arm Lat Pulldown', 'Back', 'Lats',             true,  true),
+
+-- ─── Shoulders / delts ────────────────────────────────────────────────────
+('a0000003-0000-0000-0000-000000000080', 'Rear Delt Fly',           'Shoulders', 'Rear Delts',  true,  true),
+('a0000003-0000-0000-0000-000000000081', 'Face Pull',               'Shoulders', 'Rear Delts',  true,  true),
+('a0000003-0000-0000-0000-000000000082', 'Upright Row',             'Shoulders', 'Deltoids',    true,  true),
+('a0000003-0000-0000-0000-000000000083', 'Lateral Raise',           'Shoulders', 'Side Delts',  true,  true),
+
+-- ─── Biceps ───────────────────────────────────────────────────────────────
+('a0000003-0000-0000-0000-000000000090', 'Barbell Curl',            'Arms', 'Biceps',           true,  true),
+('a0000003-0000-0000-0000-000000000091', 'Dumbbell Curl',           'Arms', 'Biceps',           true,  true),
+('a0000003-0000-0000-0000-000000000092', 'Hammer Curl',             'Arms', 'Biceps, Forearms', true,  true),
+('a0000003-0000-0000-0000-000000000093', 'Preacher Curl',           'Arms', 'Biceps',           true,  true),
+
+-- ─── Triceps ──────────────────────────────────────────────────────────────
+('a0000003-0000-0000-0000-0000000000a0', 'Skull Crusher',           'Arms', 'Triceps',          true,  true),
+('a0000003-0000-0000-0000-0000000000a1', 'Tricep Pushdown',         'Arms', 'Triceps',          true,  true),
+('a0000003-0000-0000-0000-0000000000a2', 'Close-Grip Bench Press',  'Arms', 'Triceps, Chest',   true,  true),
+
+-- ─── Core ─────────────────────────────────────────────────────────────────
+('a0000003-0000-0000-0000-0000000000b0', 'Side Plank',              'Core', 'Obliques',         false, false),
+('a0000003-0000-0000-0000-0000000000b1', 'Dead Bug',                'Core', 'Core',             false, true),
+('a0000003-0000-0000-0000-0000000000b2', 'Bird Dog',                'Core', 'Core, Lower Back', false, true),
+('a0000003-0000-0000-0000-0000000000b3', 'Ab Wheel Rollout',        'Core', 'Core',             false, true),
+('a0000003-0000-0000-0000-0000000000b4', 'Hanging Leg Raise',       'Core', 'Lower Abs',        false, true),
+('a0000003-0000-0000-0000-0000000000b5', 'Cable Crunch',            'Core', 'Abs',              true,  true),
+
+-- ─── Carries / full-body ──────────────────────────────────────────────────
+('a0000003-0000-0000-0000-0000000000c0', 'Farmer''s Carry',         'Full Body', 'Full Body',   true,  false),
+('a0000003-0000-0000-0000-0000000000c1', 'Suitcase Carry',          'Full Body', 'Core, Grip',  true,  false),
+('a0000003-0000-0000-0000-0000000000c2', 'Turkish Get-Up',          'Full Body', 'Full Body',   true,  true),
+
+-- ─── Conditioning ─────────────────────────────────────────────────────────
+('a0000003-0000-0000-0000-0000000000d0', 'Assault Bike',            'Cardio', 'Full Body',      false, false),
+('a0000003-0000-0000-0000-0000000000d1', 'Rowing Machine',          'Cardio', 'Full Body',      false, false),
+('a0000003-0000-0000-0000-0000000000d2', 'Battle Ropes',            'Cardio', 'Full Body',      false, false),
+('a0000003-0000-0000-0000-0000000000d3', 'Burpees',                 'Cardio', 'Full Body',      false, true),
+
+-- ─── Mobility / warm-up ───────────────────────────────────────────────────
+('a0000003-0000-0000-0000-0000000000e0', 'World''s Greatest Stretch', 'Mobility', 'Full Body',  false, true),
+('a0000003-0000-0000-0000-0000000000e1', 'Cat-Cow',                 'Mobility', 'Spine',        false, true),
+('a0000003-0000-0000-0000-0000000000e2', '90/90 Hip Rotation',      'Mobility', 'Hips',         false, true),
+('a0000003-0000-0000-0000-0000000000e3', 'Thoracic Spine Rotation', 'Mobility', 'Upper Back',   false, true)
+
+on conflict do nothing;
