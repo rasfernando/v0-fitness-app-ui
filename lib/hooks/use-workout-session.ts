@@ -154,7 +154,7 @@ export function useWorkoutSession(
       // Step 3: load all logged sets for this session
       const { data: loggedSets, error: setsError } = await supabase
         .from("exercise_sets")
-        .select("id, workout_exercise_id, set_number, reps_completed, weight_kg_used, rpe, completed_at")
+        .select("id, workout_exercise_id, set_number, reps_completed, weight_kg_used, rpe, completed_at, prescribed_reps, prescribed_weight_kg")
         .eq("session_id", session.id)
         .order("set_number", { ascending: true })
 
@@ -183,10 +183,19 @@ export function useWorkoutSession(
           const sets: SetComparison[] = Array.from({ length: we.sets }, (_, i) => {
             const setNumber = i + 1
             const log = logged.find((l) => l.set_number === setNumber)
+            // Prefer the snapshot of what was prescribed *at the time the set
+            // was logged* over the current template values. Falls back to the
+            // template when the snapshot is null (pre-migration 0005 data).
+            // This is what makes historical accuracy survive template edits.
+            const prescription = log?.prescribed_reps ?? we.prescription
+            const prescribedWeightKg =
+              log?.prescribed_weight_kg !== null && log?.prescribed_weight_kg !== undefined
+                ? log.prescribed_weight_kg
+                : we.weight_kg
             return {
               setNumber,
-              prescription: we.prescription,
-              prescribedWeightKg: we.weight_kg,
+              prescription,
+              prescribedWeightKg,
               actualReps: log?.reps_completed ?? null,
               actualWeightKg: log?.weight_kg_used ?? null,
               rpe: log?.rpe ?? null,
