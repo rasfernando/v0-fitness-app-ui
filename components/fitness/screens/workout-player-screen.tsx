@@ -155,6 +155,10 @@ export function WorkoutPlayerScreen({
         setNumber: set.setNumber,
         repsCompleted: reps,
         weightKgUsed: weight,
+        // Snapshot the current prescription onto the logged set so history
+        // stays accurate if the template is edited later. See migration 0005.
+        prescribedReps: currentExercise.prescription,
+        prescribedWeightKg: currentExercise.weightKg,
       })
     } catch (err) {
       // Roll back the optimistic flag
