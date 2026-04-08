@@ -72,6 +72,7 @@ export function useWorkouts(): UseWorkoutsResult {
         workout_exercises(count)
       `)
       .eq("pt_id", user.id)
+      .is("deleted_at", null) // hide soft-deleted workouts from the library
       .order("created_at", { ascending: false })
       .then(({ data: rows, error: queryError }) => {
         if (cancelled) return
