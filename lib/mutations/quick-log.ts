@@ -1,6 +1,7 @@
 "use client"
 
 import { supabase } from "@/lib/supabase/client"
+import { notifyPTsWorkoutLogged } from "./notifications"
 
 export interface QuickLogExerciseEntry {
   exerciseId: string
@@ -26,11 +27,13 @@ export interface QuickLogExerciseEntry {
  */
 export async function saveQuickLog({
   clientId,
+  clientName,
   date,
   exercises,
   notes,
 }: {
   clientId: string
+  clientName: string
   date: string // YYYY-MM-DD
   exercises: QuickLogExerciseEntry[]
   notes?: string
@@ -145,6 +148,15 @@ export async function saveQuickLog({
 
     if (setErr) throw new Error(`Failed to save sets: ${setErr.message}`)
   }
+
+  // Fire-and-forget: notify all PTs coaching this client
+  const exerciseNames = exercises.map((e) => e.exerciseName).join(", ")
+  notifyPTsWorkoutLogged({
+    clientId,
+    clientName,
+    workoutTitle: exercises.length === 1 ? exerciseNames : `${exercises.length} exercises`,
+    scheduledWorkoutId,
+  })
 
   return { scheduledWorkoutId, workoutId }
 }

@@ -14,12 +14,14 @@ import {
   Calendar,
   CheckCircle2,
   Loader2,
+  Bell,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { WorkoutCalendar, ScheduledWorkout } from "@/components/fitness/workout-calendar"
 import { useClients, type PTClientSummary } from "@/lib/hooks/use-clients"
 import { useScheduledWorkouts } from "@/lib/hooks/use-scheduled-workouts"
 import { useWorkouts, type WorkoutSummary } from "@/lib/hooks/use-workouts"
+import { useNotifications } from "@/lib/hooks/use-notifications"
 import {
   scheduleWorkoutForClient,
   scheduleSingleExerciseForClient,
@@ -31,6 +33,7 @@ import {
 } from "@/lib/mutations/clients"
 import { useAuth } from "@/lib/auth"
 import { Avatar } from "@/components/fitness/avatar"
+import { NotificationsPanel } from "@/components/fitness/notifications-panel"
 
 // LibraryWorkout was a hardcoded local interface; it's now an alias for the
 // WorkoutSummary returned by useWorkouts(), which is the same shape but
@@ -112,11 +115,6 @@ function AddClientSheet({
           >
             <X className="h-4 w-4" />
           </button>
-        </div>
-
-        {/* DEBUG BANNER — remove after fixing */}
-        <div className="mx-5 mb-2 rounded-lg bg-blue-500/20 px-3 py-2 text-[10px] font-mono text-blue-300">
-          ptId: {ptId} | results: {results.length} | searching: {String(searching)} | error: {searchError ?? "none"}
         </div>
 
         {addError && (
@@ -255,7 +253,9 @@ function ClientProfileView({
       await scheduleWorkoutForClient({
         clientId: client.id,
         ptId: currentUser!.id,
+        ptName: currentUser!.displayName,
         workoutId: workout.id,
+        workoutTitle: workout.title,
         scheduledDate: date,
       })
       refetchSchedule()
@@ -276,6 +276,7 @@ function ClientProfileView({
       await scheduleSingleExerciseForClient({
         clientId: client.id,
         ptId: currentUser!.id,
+        ptName: currentUser!.displayName,
         exerciseName: exercise.title,
         category: exercise.category,
         sets: exercise.sets ?? 3,
@@ -409,6 +410,7 @@ function ClientProfileView({
             onScheduleExercise={handleScheduleExercise}
             onRemoveWorkout={handleRemoveWorkout}
             clientName={client.name}
+            messageRecipientId={client.id}
           />
         </div>
       </div>
@@ -426,9 +428,11 @@ export function PTCoachScreen({ onStartLiveSession }: PTCoachScreenProps) {
   const { user } = useAuth()
   const { data: clientSummaries, error: clientsError, refetch: refetchClients } = useClients()
   const { data: availableWorkouts, error: workoutsError } = useWorkouts()
+  const { unreadCount } = useNotifications()
 
   const [searchQuery, setSearchQuery] = useState("")
   const [showAddClient, setShowAddClient] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
   const [selectedClient, setSelectedClient] = useState<PTClientSummary | null>(null)
 
   const filteredClients = useMemo(
@@ -463,13 +467,26 @@ export function PTCoachScreen({ onStartLiveSession }: PTCoachScreenProps) {
   return (
     <div className="flex min-h-full flex-col bg-background">
       {/* Header */}
-      <div className="px-4 pt-3 pb-2">
-        <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold uppercase text-foreground">
-          My Clients
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {clientSummaries.length} client{clientSummaries.length !== 1 ? "s" : ""}
-        </p>
+      <div className="flex items-center justify-between px-4 pt-3 pb-2">
+        <div>
+          <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold uppercase text-foreground">
+            My Clients
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {clientSummaries.length} client{clientSummaries.length !== 1 ? "s" : ""}
+          </p>
+        </div>
+        <button
+          onClick={() => setShowNotifications(true)}
+          className="relative flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-foreground"
+        >
+          <Bell className="h-5 w-5" />
+          {unreadCount > 0 && (
+            <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          )}
+        </button>
       </div>
 
       {/* Quick Stats */}
@@ -585,6 +602,12 @@ export function PTCoachScreen({ onStartLiveSession }: PTCoachScreenProps) {
           onAdded={handleClientAdded}
         />
       )}
+
+      {/* Notifications Panel */}
+      <NotificationsPanel
+        open={showNotifications}
+        onClose={() => setShowNotifications(false)}
+      />
     </div>
   )
 }

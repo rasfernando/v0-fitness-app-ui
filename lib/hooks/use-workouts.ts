@@ -16,6 +16,7 @@ export interface WorkoutSummary {
   difficulty: "Beginner" | "Intermediate" | "Advanced"
   exercises: number
   imageUrl: string
+  isGlobal: boolean           // true = shared template (read-only), false = PT's own
 }
 
 interface UseWorkoutsResult {
@@ -35,8 +36,8 @@ function formatDifficulty(d: string): "Beginner" | "Intermediate" | "Advanced" {
 }
 
 /**
- * Loads workouts owned by the current PT, with an exercise count for each.
- * Returns [] for non-PT users.
+ * Loads all workout templates visible to the current PT (their own + global).
+ * RLS handles visibility. Returns [] for non-PT users.
  */
 export function useWorkouts(): UseWorkoutsResult {
   const { user } = useAuth()
@@ -69,10 +70,11 @@ export function useWorkouts(): UseWorkoutsResult {
         estimated_duration_minutes,
         estimated_calories,
         image_url,
+        is_global,
         workout_exercises(count)
       `)
-      .eq("pt_id", user.id)
-      .is("deleted_at", null) // hide soft-deleted workouts from the library
+      .eq("is_adhoc", false)   // only show real templates, not client quick-logs
+      .is("deleted_at", null)  // hide soft-deleted workouts from the library
       .order("created_at", { ascending: false })
       .then(({ data: rows, error: queryError }) => {
         if (cancelled) return
@@ -101,6 +103,7 @@ export function useWorkouts(): UseWorkoutsResult {
             difficulty: formatDifficulty(row.difficulty),
             exercises: exerciseCount,
             imageUrl: row.image_url ?? FALLBACK_IMAGE,
+            isGlobal: row.is_global ?? false,
           }
         })
 

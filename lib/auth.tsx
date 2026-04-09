@@ -51,6 +51,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   // Given a Supabase session, fetch the matching profile and set state.
+  // Retries a few times on failure to handle the small delay between
+  // auth.users INSERT and the trigger creating the profiles row.
   const loadProfile = useCallback(async (session: Session | null) => {
     if (!session?.user) {
       setUser(null)
@@ -58,21 +60,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    const { data: profile, error } = await supabase
-      .from("profiles")
-      .select("id, role, display_name, username")
-      .eq("id", session.user.id)
-      .single()
+    let profile: { id: string; role: string; display_name: string; username: string } | null = null
+    let lastError: string | null = null
 
-    if (error || !profile) {
-      // Profile might not exist yet if the trigger hasn't fired / propagated.
-      // In that case, sign out so the user doesn't get stuck in a broken state.
-      console.error("Failed to load profile:", error?.message)
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, role, display_name, username")
+        .eq("id", session.user.id)
+        .single()
+
+      if (data) {
+        profile = data
+        break
+      }
+
+      lastError = error?.message ?? "Profile not found"
+
+      // Wait before retrying — the trigger may not have fired yet
+      if (attempt < 4) {
+        await new Promise((r) => setTimeout(r, 500 * (attempt + 1)))
+      }
+    }
+
+    if (!profile) {
+      console.error("Failed to load profile after retries:", lastError)
       setUser(null)
     } else {
       setUser({
         id: profile.id,
-        role: profile.role,
+        role: profile.role as "pt" | "client",
         displayName: profile.display_name,
         username: profile.username,
       })
@@ -83,8 +100,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // On mount: restore existing session, then listen for changes.
   useEffect(() => {
-    // 1. Restore session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // 1. Restore session — if the stored token is stale/corrupt, sign out
+    //    to clear it so it doesn't keep interfering with fresh logins.
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.warn("Stale session detected, clearing:", error.message)
+        supabase.auth.signOut()
+        setUser(null)
+        setLoading(false)
+        return
+      }
       loadProfile(session)
     })
 
@@ -106,7 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signUp = useCallback(async (input: SignUpInput) => {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: input.email,
       password: input.password,
       options: {
@@ -118,6 +143,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     })
     if (error) throw error
+
+    // If email confirmation is enabled, Supabase returns a user but no session.
+    // In that case, sign in immediately with the credentials we just used.
+    if (data.user && !data.session) {
+      // Small delay to let the trigger create the profile row
+      await new Promise((r) => setTimeout(r, 800))
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: input.email,
+        password: input.password,
+      })
+      if (signInError) throw signInError
+    }
     // The DB trigger creates the profile. onAuthStateChange fires → loadProfile.
   }, [])
 

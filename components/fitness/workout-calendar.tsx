@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Plus, Dumbbell, Clock, X, Check, Search, Lay
 import { cn } from "@/lib/utils"
 import { useExercises, type ExerciseOption } from "@/lib/hooks/use-exercises"
 import { LoggedSetsList } from "@/components/fitness/logged-sets-list"
+import { WorkoutMessageThread } from "@/components/fitness/workout-message-thread"
 
 export interface ScheduledWorkout {
   id: string
@@ -31,6 +32,7 @@ interface CalendarWorkout {
   difficulty: "Beginner" | "Intermediate" | "Advanced"
   exercises: number
   imageUrl: string
+  isGlobal: boolean
 }
 
 interface WorkoutCalendarProps {
@@ -41,6 +43,8 @@ interface WorkoutCalendarProps {
   onRemoveWorkout?: (workoutId: string) => void
   readOnly?: boolean
   clientName?: string
+  /** ID of the other party in the workout thread (PT passes clientId, client passes ptId) */
+  messageRecipientId?: string
 }
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
@@ -511,6 +515,7 @@ export function WorkoutCalendar({
   onRemoveWorkout,
   readOnly = false,
   clientName,
+  messageRecipientId,
 }: WorkoutCalendarProps) {
   const today = new Date()
   const [currentMonth, setCurrentMonth] = useState(today.getMonth())
@@ -704,9 +709,9 @@ export function WorkoutCalendar({
                   <div
                     className={cn(
                       "flex items-start gap-3 p-3",
-                      isCompleted && "cursor-pointer transition-colors hover:bg-secondary/50 rounded-xl"
+                      (isCompleted || messageRecipientId) && "cursor-pointer transition-colors hover:bg-secondary/50 rounded-xl"
                     )}
-                    onClick={() => isCompleted && setExpandedWorkoutId(isExpanded ? null : item.id)}
+                    onClick={() => (isCompleted || messageRecipientId) && setExpandedWorkoutId(isExpanded ? null : item.id)}
                   >
                   <div className={cn(
                     "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
@@ -752,15 +757,26 @@ export function WorkoutCalendar({
                       <X className="h-4 w-4" />
                     </button>
                   )}
-                  {isCompleted && (
+                  {(isCompleted || messageRecipientId) && (
                     isExpanded
-                      ? <ChevronUp className="h-5 w-5 shrink-0 text-emerald-400" />
-                      : <ChevronDown className="h-5 w-5 shrink-0 text-emerald-400" />
+                      ? <ChevronUp className={cn("h-5 w-5 shrink-0", isCompleted ? "text-emerald-400" : "text-primary")} />
+                      : <ChevronDown className={cn("h-5 w-5 shrink-0", isCompleted ? "text-emerald-400" : "text-primary")} />
                   )}
                   </div>
-                  {isExpanded && isCompleted && (
+                  {isExpanded && (
                     <div className="border-t border-border/50 px-3 pb-3">
-                      <LoggedSetsList scheduledWorkoutId={item.id} />
+                      {isCompleted && (
+                        <LoggedSetsList scheduledWorkoutId={item.id} />
+                      )}
+                      {messageRecipientId && (
+                        <div className={cn(isCompleted && "mt-3 border-t border-border/50 pt-3")}>
+                          <p className="mb-2 mt-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Messages</p>
+                          <WorkoutMessageThread
+                            scheduledWorkoutId={item.id}
+                            recipientId={messageRecipientId}
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

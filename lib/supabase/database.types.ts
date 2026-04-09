@@ -10,6 +10,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
   public: {
     Tables: {
       exercise_sets: {
@@ -119,6 +124,47 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          data: Json | null
+          id: string
+          is_read: boolean
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          data?: Json | null
+          id?: string
+          is_read?: boolean
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          data?: Json | null
+          id?: string
+          is_read?: boolean
+          title?: string
+          type?: Database["public"]["Enums"]["notification_type"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -205,7 +251,7 @@ export type Database = {
       }
       scheduled_workouts: {
         Row: {
-          assigned_by_pt_id: string
+          assigned_by_pt_id: string | null
           client_id: string
           created_at: string
           id: string
@@ -216,7 +262,7 @@ export type Database = {
           workout_id: string
         }
         Insert: {
-          assigned_by_pt_id: string
+          assigned_by_pt_id?: string | null
           client_id: string
           created_at?: string
           id?: string
@@ -227,7 +273,7 @@ export type Database = {
           workout_id: string
         }
         Update: {
-          assigned_by_pt_id?: string
+          assigned_by_pt_id?: string | null
           client_id?: string
           created_at?: string
           id?: string
@@ -318,6 +364,45 @@ export type Database = {
           },
         ]
       }
+      workout_messages: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          scheduled_workout_id: string
+          sender_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          scheduled_workout_id: string
+          sender_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          scheduled_workout_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workout_messages_scheduled_workout_id_fkey"
+            columns: ["scheduled_workout_id"]
+            isOneToOne: false
+            referencedRelation: "scheduled_workouts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workout_sessions: {
         Row: {
           client_id: string
@@ -380,7 +465,9 @@ export type Database = {
           estimated_duration_minutes: number | null
           id: string
           image_url: string | null
-          pt_id: string
+          is_adhoc: boolean
+          is_global: boolean
+          pt_id: string | null
           title: string
           updated_at: string
         }
@@ -394,7 +481,9 @@ export type Database = {
           estimated_duration_minutes?: number | null
           id?: string
           image_url?: string | null
-          pt_id: string
+          is_adhoc?: boolean
+          is_global?: boolean
+          pt_id?: string | null
           title: string
           updated_at?: string
         }
@@ -408,7 +497,9 @@ export type Database = {
           estimated_duration_minutes?: number | null
           id?: string
           image_url?: string | null
-          pt_id?: string
+          is_adhoc?: boolean
+          is_global?: boolean
+          pt_id?: string | null
           title?: string
           updated_at?: string
         }
@@ -431,6 +522,10 @@ export type Database = {
     }
     Enums: {
       difficulty_level: "beginner" | "intermediate" | "advanced"
+      notification_type:
+        | "workout_assigned"
+        | "workout_logged"
+        | "workout_message"
       relationship_status: "active" | "paused" | "ended"
       scheduled_status: "scheduled" | "completed" | "missed" | "skipped"
       user_role: "pt" | "client"
@@ -441,31 +536,138 @@ export type Database = {
   }
 }
 
-// ── Convenience aliases used throughout the app ──────────────────────────────
-// These re-export the enum types so existing imports keep working.
-export type UserRole = Database["public"]["Enums"]["user_role"]
-export type DifficultyLevel = Database["public"]["Enums"]["difficulty_level"]
-export type RelationshipStatus = Database["public"]["Enums"]["relationship_status"]
-export type ScheduledStatus = Database["public"]["Enums"]["scheduled_status"]
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
-// ── Supabase helper types ────────────────────────────────────────────────────
-type DefaultSchema = Database[Extract<keyof Database, "public">]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
-  TableName extends keyof (DefaultSchema["Tables"] & DefaultSchema["Views"]),
-> = (DefaultSchema["Tables"] &
-  DefaultSchema["Views"])[TableName] extends { Row: infer R }
-  ? R
-  : never
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
 
 export type TablesInsert<
-  TableName extends keyof DefaultSchema["Tables"],
-> = DefaultSchema["Tables"][TableName] extends { Insert: infer I } ? I : never
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
 
 export type TablesUpdate<
-  TableName extends keyof DefaultSchema["Tables"],
-> = DefaultSchema["Tables"][TableName] extends { Update: infer U } ? U : never
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
 
 export type Enums<
-  EnumName extends keyof DefaultSchema["Enums"],
-> = DefaultSchema["Enums"][EnumName]
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      difficulty_level: ["beginner", "intermediate", "advanced"],
+      notification_type: [
+        "workout_assigned",
+        "workout_logged",
+        "workout_message",
+      ],
+      relationship_status: ["active", "paused", "ended"],
+      scheduled_status: ["scheduled", "completed", "missed", "skipped"],
+      user_role: ["pt", "client"],
+    },
+  },
+} as const
+
+export type ScheduledStatus = Database["public"]["Enums"]["scheduled_status"]
+export type UserRole = Database["public"]["Enums"]["user_role"]

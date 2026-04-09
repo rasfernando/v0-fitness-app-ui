@@ -1,6 +1,8 @@
 "use client"
 
 import { supabase } from "@/lib/supabase/client"
+import { notifyClientWorkoutAssigned } from "./notifications"
+import { sendWorkoutMessage } from "./workout-messages"
 
 // Plain async functions (not hooks) that mutate the database. Components
 // call these from event handlers, then refetch the relevant queries on success.
@@ -18,13 +20,17 @@ import { supabase } from "@/lib/supabase/client"
 export interface ScheduleWorkoutInput {
   clientId: string
   ptId: string
+  ptName: string
   workoutId: string      // real UUID from workouts table
+  workoutTitle: string
   scheduledDate: string  // YYYY-MM-DD
+  message?: string       // optional message from PT to client
 }
 
 /**
  * Schedule an existing workout template for a client on a date.
  * Returns the inserted row's id.
+ * Also notifies the client and optionally sends a message on the workout thread.
  */
 export async function scheduleWorkoutForClient(
   input: ScheduleWorkoutInput
@@ -43,12 +49,34 @@ export async function scheduleWorkoutForClient(
 
   if (error) throw new Error(`Failed to schedule workout: ${error.message}`)
   if (!data) throw new Error("Failed to schedule workout: no row returned")
+
+  // Fire-and-forget: notify client + optional message
+  notifyClientWorkoutAssigned({
+    clientId: input.clientId,
+    ptName: input.ptName,
+    workoutTitle: input.workoutTitle,
+    scheduledDate: input.scheduledDate,
+    scheduledWorkoutId: data.id,
+    message: input.message,
+  })
+
+  if (input.message) {
+    sendWorkoutMessage({
+      scheduledWorkoutId: data.id,
+      senderId: input.ptId,
+      senderName: input.ptName,
+      message: input.message,
+      recipientId: input.clientId,
+    }).catch((err) => console.error("Failed to send workout message:", err))
+  }
+
   return data.id
 }
 
 export interface ScheduleSingleExerciseInput {
   clientId: string
   ptId: string
+  ptName: string
   exerciseName: string
   category: string
   sets: number
@@ -56,6 +84,7 @@ export interface ScheduleSingleExerciseInput {
   weightKg?: number
   restSeconds?: number
   scheduledDate: string  // YYYY-MM-DD
+  message?: string       // optional message from PT to client
 }
 
 /**
@@ -135,8 +164,11 @@ export async function scheduleSingleExerciseForClient(
   return scheduleWorkoutForClient({
     clientId: input.clientId,
     ptId: input.ptId,
+    ptName: input.ptName,
     workoutId: workout.id,
+    workoutTitle: input.exerciseName,
     scheduledDate: input.scheduledDate,
+    message: input.message,
   })
 }
 

@@ -7,8 +7,10 @@ import { StatCard } from "@/components/fitness/stat-card"
 import { WorkoutCalendar } from "@/components/fitness/workout-calendar"
 import { useScheduledWorkouts } from "@/lib/hooks/use-scheduled-workouts"
 import { useProgressData } from "@/lib/hooks/use-progress-data"
+import { useNotifications } from "@/lib/hooks/use-notifications"
 import { useAuth } from "@/lib/auth"
 import { Avatar } from "@/components/fitness/avatar"
+import { NotificationsPanel } from "@/components/fitness/notifications-panel"
 import { cn } from "@/lib/utils"
 
 
@@ -19,12 +21,14 @@ interface DashboardScreenProps {
 export function DashboardScreen({ onStartScheduledWorkout }: DashboardScreenProps) {
   // v3 — no ProgrammeCard, uses nextWorkout
   const [showCalendar, setShowCalendar] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
   const [activityTab, setActivityTab] = useState<"upcoming" | "recent">("upcoming")
 
   // Real data from Supabase, scoped to the current dev user.
   const { data: scheduledWorkoutsRaw, error: scheduleError } = useScheduledWorkouts()
 // Headline-stats data and current user, both for the dashboard tiles.
   const { user } = useAuth()
+  const { unreadCount } = useNotifications()
   const { data: progressData } = useProgressData()
   // Normalize the DB's 4 statuses down to the 3 the calendar component understands.
   // TODO: align WorkoutCalendar's status type with the DB enum.
@@ -98,9 +102,16 @@ export function DashboardScreen({ onStartScheduledWorkout }: DashboardScreenProp
             </h1>
           </div>
           <div className="flex items-center gap-3">
-            <button className="relative flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-foreground">
+            <button
+              onClick={() => setShowNotifications(true)}
+              className="relative flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-foreground"
+            >
               <Bell className="h-5 w-5" />
-              <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary" />
+              {unreadCount > 0 && (
+                <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
             </button>
             <Avatar name={user?.displayName ?? "User"} id={user?.id} size="h-10 w-10" />
           </div>
@@ -297,6 +308,12 @@ export function DashboardScreen({ onStartScheduledWorkout }: DashboardScreenProp
           onClose={() => setShowCalendar(false)}
         />
       )}
+
+      {/* Notifications Panel */}
+      <NotificationsPanel
+        open={showNotifications}
+        onClose={() => setShowNotifications(false)}
+      />
 
     </div>
   )
