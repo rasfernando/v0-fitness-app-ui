@@ -11,9 +11,12 @@ export interface PrescribedExercise {
   name: string
   category: string | null
   muscleGroup: string | null
+  description: string | null // coaching cue / form guidance
   imageUrl: string | null
+  videoUrl: string | null    // optional demo video (YouTube embed, Supabase Storage, etc.)
+  supersetGroup: string | null // e.g. "A", "B", "C" — exercises with same group form a circuit
   position: number           // order within the workout
-  sets: number               // prescribed number of sets
+  sets: number               // prescribed number of sets (= rounds when in a superset)
   prescription: string       // "8-12", "30s", "AMRAP" — display string
   weightKg: number | null    // prescribed weight, may be null
   restSeconds: number
@@ -94,12 +97,15 @@ export function useScheduledWorkoutDetail(
             weight_kg,
             rest_seconds,
             notes,
+            superset_group,
             exercises:exercise_id (
               id,
               name,
               category,
               muscle_group,
+              description,
               image_url,
+              video_url,
               uses_weight,
               uses_reps
             )
@@ -137,13 +143,16 @@ export function useScheduledWorkoutDetail(
           weight_kg: number | null
           rest_seconds: number
           notes: string | null
+          superset_group: string | null
           exercises:
             | {
                 id: string
                 name: string
                 category: string | null
                 muscle_group: string | null
+                description: string | null
                 image_url: string | null
+                video_url: string | null
                 uses_weight: boolean
                 uses_reps: boolean
               }
@@ -152,7 +161,9 @@ export function useScheduledWorkoutDetail(
                 name: string
                 category: string | null
                 muscle_group: string | null
+                description: string | null
                 image_url: string | null
+                video_url: string | null
                 uses_weight: boolean
                 uses_reps: boolean
               }>
@@ -169,7 +180,10 @@ export function useScheduledWorkoutDetail(
               name: ex.name,
               category: ex.category,
               muscleGroup: ex.muscle_group,
+              description: ex.description,
               imageUrl: ex.image_url,
+              videoUrl: ex.video_url,
+              supersetGroup: we.superset_group,
               position: we.position,
               sets: we.sets,
               prescription: we.prescription,

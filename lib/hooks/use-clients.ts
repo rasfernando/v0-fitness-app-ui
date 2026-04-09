@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase/client"
-import { useDevUser } from "@/lib/dev-user"
+import { useAuth } from "@/lib/auth"
 
 // One row per client coached by the current PT, joined with profile info
 // and lightweight schedule stats (counts only — not full workout list).
@@ -26,7 +26,7 @@ interface UseClientsResult {
 }
 
 export function useClients(): UseClientsResult {
-  const { user } = useDevUser()
+  const { user } = useAuth()
   const [data, setData] = useState<PTClientSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -35,7 +35,7 @@ export function useClients(): UseClientsResult {
   useEffect(() => {
     let cancelled = false
 
-    if (user.role !== "pt") {
+    if (!user || user.role !== "pt") {
       setData([])
       setLoading(false)
       return
@@ -135,7 +135,7 @@ export function useClients(): UseClientsResult {
     return () => {
       cancelled = true
     }
-  }, [user.id, user.role, refetchToken])
+  }, [user?.id, user?.role, refetchToken])
 
   return {
     data,

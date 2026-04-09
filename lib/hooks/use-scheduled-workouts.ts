@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase/client"
-import { useDevUser } from "@/lib/dev-user"
+import { useAuth } from "@/lib/auth"
 import type { ScheduledStatus } from "@/lib/supabase/database.types"
 
 // Shape returned by the joined query — flattened for easy consumption
@@ -36,7 +36,7 @@ interface UseScheduledWorkoutsResult {
  * (e.g. PT viewing their own schedule — they don't have one).
  */
 export function useScheduledWorkouts(clientId?: string): UseScheduledWorkoutsResult {
-  const { user } = useDevUser()
+  const { user } = useAuth()
   const [data, setData] = useState<ScheduledWorkoutWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -46,7 +46,7 @@ export function useScheduledWorkouts(clientId?: string): UseScheduledWorkoutsRes
   //  - explicit clientId arg wins
   //  - otherwise: the current user, but only if they're a client
   const targetClientId =
-    clientId ?? (user.role === "client" ? user.id : null)
+    clientId ?? (user?.role === "client" ? user.id : null)
 
   useEffect(() => {
     let cancelled = false

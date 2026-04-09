@@ -7,7 +7,8 @@ import { StatCard } from "@/components/fitness/stat-card"
 import { WorkoutCalendar } from "@/components/fitness/workout-calendar"
 import { useScheduledWorkouts } from "@/lib/hooks/use-scheduled-workouts"
 import { useProgressData } from "@/lib/hooks/use-progress-data"
-import { useDevUser } from "@/lib/dev-user"
+import { useAuth } from "@/lib/auth"
+import { Avatar } from "@/components/fitness/avatar"
 import { cn } from "@/lib/utils"
 
 
@@ -23,7 +24,7 @@ export function DashboardScreen({ onStartScheduledWorkout }: DashboardScreenProp
   // Real data from Supabase, scoped to the current dev user.
   const { data: scheduledWorkoutsRaw, error: scheduleError } = useScheduledWorkouts()
 // Headline-stats data and current user, both for the dashboard tiles.
-  const { user } = useDevUser()
+  const { user } = useAuth()
   const { data: progressData } = useProgressData()
   // Normalize the DB's 4 statuses down to the 3 the calendar component understands.
   // TODO: align WorkoutCalendar's status type with the DB enum.
@@ -66,7 +67,7 @@ export function DashboardScreen({ onStartScheduledWorkout }: DashboardScreenProp
   const statsVolume = formatVolumeKg(progressData?.volumeLoadThisWeekKg ?? 0)
 
   // Greet the user by their first name, falling back to display name.
-  const firstName = user.displayName.split(" ")[0]
+  const firstName = user?.displayName.split(" ")[0] ?? "there"
   // Time-of-day greeting. Computed in an effect so it uses the user's
   // local clock and avoids a server/client hydration mismatch on initial
   // render. Defaults to "Good morning" before the effect runs.
@@ -101,13 +102,7 @@ export function DashboardScreen({ onStartScheduledWorkout }: DashboardScreenProp
               <Bell className="h-5 w-5" />
               <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary" />
             </button>
-            <div className="h-10 w-10 overflow-hidden rounded-full bg-secondary">
-              <img
-                src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80"
-                alt="Profile"
-                className="h-full w-full object-cover"
-              />
-            </div>
+            <Avatar name={user?.displayName ?? "User"} id={user?.id} size="h-10 w-10" />
           </div>
         </div>
       </header>

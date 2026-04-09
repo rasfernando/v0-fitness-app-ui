@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { supabase } from "@/lib/supabase/client"
-import { useDevUser } from "@/lib/dev-user"
+import { useAuth } from "@/lib/auth"
 
 // Shape compatible with the existing LibraryWorkout interface in pt-coach-screen.tsx
 // so we can drop this into the existing UI without restructuring it.
@@ -39,7 +39,7 @@ function formatDifficulty(d: string): "Beginner" | "Intermediate" | "Advanced" {
  * Returns [] for non-PT users.
  */
 export function useWorkouts(): UseWorkoutsResult {
-  const { user } = useDevUser()
+  const { user } = useAuth()
   const [data, setData] = useState<WorkoutSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -48,7 +48,7 @@ export function useWorkouts(): UseWorkoutsResult {
   useEffect(() => {
     let cancelled = false
 
-    if (user.role !== "pt") {
+    if (!user || user.role !== "pt") {
       setData([])
       setLoading(false)
       return
@@ -111,7 +111,7 @@ export function useWorkouts(): UseWorkoutsResult {
     return () => {
       cancelled = true
     }
-  }, [user.id, user.role, refetchToken])
+  }, [user?.id, user?.role, refetchToken])
 
   const refetch = useCallback(() => setRefetchToken((t) => t + 1), [])
 

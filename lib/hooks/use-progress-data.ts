@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react"
 import { supabase } from "@/lib/supabase/client"
-import { useDevUser } from "@/lib/dev-user"
+import { useAuth } from "@/lib/auth"
 
 // ─────────────────────────────────────────────────────────────────────────
 // Types
@@ -90,7 +90,7 @@ function weekKey(iso: string): string {
  * Returns ProgressData with empty arrays for clients with no data yet.
  */
 export function useProgressData(): UseProgressDataResult {
-  const { user } = useDevUser()
+  const { user } = useAuth()
   const [rawSessions, setRawSessions] = useState<RawSession[] | null>(null)
   const [rawSets, setRawSets] = useState<RawSet[] | null>(null)
   const [loading, setLoading] = useState(true)
@@ -100,7 +100,7 @@ export function useProgressData(): UseProgressDataResult {
   useEffect(() => {
     let cancelled = false
 
-    if (user.role !== "client") {
+    if (!user || user.role !== "client") {
       setRawSessions([])
       setRawSets([])
       setLoading(false)
@@ -219,7 +219,7 @@ export function useProgressData(): UseProgressDataResult {
     return () => {
       cancelled = true
     }
-  }, [user.id, user.role, refetchToken])
+  }, [user?.id, user?.role, refetchToken])
 
   // Derive ProgressData from the raw query results
   const data = useMemo<ProgressData | null>(() => {

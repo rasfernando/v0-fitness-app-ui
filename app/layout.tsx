@@ -1,8 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter, Oswald } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
-import { DevUserProvider } from '@/lib/dev-user'
-import { DevUserSwitcher } from '@/components/dev/dev-user-switcher'
+import { AuthProvider } from '@/lib/auth'
 import './globals.css'
 
 const inter = Inter({ 
@@ -55,10 +54,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} ${oswald.variable} font-sans antialiased`}>
-        <DevUserProvider>
+        <AuthProvider>
           {children}
-          <DevUserSwitcher />
-        </DevUserProvider>
+        </AuthProvider>
         <Analytics />
       </body>
     </html>

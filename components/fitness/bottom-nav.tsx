@@ -34,6 +34,7 @@ const CLIENT_NAV_ITEMS: NavItem[] = [
 const PT_NAV_ITEMS: NavItem[] = [
   { id: "pt-builder", label: "Builder", icon: PenTool, isCenter: false },
   { id: "pt-clients", label: "Clients", icon: Users, isCenter: true },
+  { id: "profile", label: "Profile", icon: User, isCenter: false },
 ]
 
 function NavButton({

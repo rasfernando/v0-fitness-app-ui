@@ -271,6 +271,7 @@ export type Database = {
           prescription: string
           rest_seconds: number
           sets: number
+          superset_group: string | null
           weight_kg: number | null
           workout_id: string
         }
@@ -283,6 +284,7 @@ export type Database = {
           prescription: string
           rest_seconds?: number
           sets: number
+          superset_group?: string | null
           weight_kg?: number | null
           workout_id: string
         }
@@ -295,6 +297,7 @@ export type Database = {
           prescription?: string
           rest_seconds?: number
           sets?: number
+          superset_group?: string | null
           weight_kg?: number | null
           workout_id?: string
         }

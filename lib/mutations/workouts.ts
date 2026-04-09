@@ -22,6 +22,7 @@ export interface WorkoutExerciseInput {
   weightKg: number | null     // prescribed weight, null for bodyweight/time
   restSeconds: number
   notes?: string | null
+  supersetGroup?: string | null  // "A", "B", "C" etc. — exercises with same group form a circuit
 }
 
 export interface CreateWorkoutInput {
@@ -110,6 +111,7 @@ export async function createWorkout(input: CreateWorkoutInput): Promise<string> 
       weight_kg: ex.weightKg,
       rest_seconds: ex.restSeconds,
       notes: ex.notes ?? null,
+      superset_group: ex.supersetGroup ?? null,
     }))
 
     const { error: exError } = await supabase
@@ -237,6 +239,7 @@ export async function updateWorkoutExercises(
       weight_kg: ex.weightKg,
       rest_seconds: ex.restSeconds,
       notes: ex.notes ?? null,
+      superset_group: ex.supersetGroup ?? null,
     }))
     const { error: insertError } = await supabase
       .from("workout_exercises")
@@ -259,6 +262,7 @@ export async function updateWorkoutExercises(
         weight_kg: ex.weightKg,
         rest_seconds: ex.restSeconds,
         notes: ex.notes ?? null,
+        superset_group: ex.supersetGroup ?? null,
       })
       .eq("id", ex.workoutExerciseId as string)
     if (updateError) {

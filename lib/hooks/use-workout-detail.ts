@@ -17,6 +17,7 @@ export interface WorkoutDetailExercise {
   name: string
   category: string | null
   muscleGroup: string | null
+  supersetGroup: string | null // e.g. "A", "B", "C" — exercises in the same group form a superset
   position: number
   sets: number
   prescription: string
@@ -103,6 +104,7 @@ export function useWorkoutDetail(
           weight_kg,
           rest_seconds,
           notes,
+          superset_group,
           exercises:exercise_id (
             id,
             name,
@@ -136,6 +138,7 @@ export function useWorkoutDetail(
           weight_kg: number | null
           rest_seconds: number
           notes: string | null
+          superset_group: string | null
           exercises:
             | {
                 id: string
@@ -166,6 +169,7 @@ export function useWorkoutDetail(
               name: ex.name,
               category: ex.category,
               muscleGroup: ex.muscle_group,
+              supersetGroup: we.superset_group,
               position: we.position,
               sets: we.sets,
               prescription: we.prescription,

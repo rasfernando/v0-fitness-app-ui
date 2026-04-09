@@ -8,9 +8,11 @@ import { WorkoutPlayerScreen } from "@/components/fitness/screens/workout-player
 import { ProgressScreen } from "@/components/fitness/screens/progress-screen"
 import { PTCoachScreen } from "@/components/fitness/screens/pt-coach-screen"
 import { PTBuilderScreen } from "@/components/fitness/screens/pt-builder-screen"
+import { LiveSessionScreen } from "@/components/fitness/screens/live-session-screen"
 import { BottomNav, type NavTab } from "@/components/fitness/bottom-nav"
 import { useScheduledWorkouts } from "@/lib/hooks/use-scheduled-workouts"
-import { cn } from "@/lib/utils"
+import { useAuth } from "@/lib/auth"
+import { Avatar } from "@/components/fitness/avatar"
 
 type Screen =
   | "welcome"
@@ -22,57 +24,21 @@ type Screen =
   | "profile"
   | "pt-clients"
   | "pt-builder"
-type AppMode = "client" | "pt"
-
-function ModeToggle({ mode, onChange }: { mode: AppMode; onChange: (m: AppMode) => void }) {
-  return (
-    <div className="sticky top-0 z-50 flex items-center justify-center bg-background px-4 pb-3 pt-4">
-      <div className="flex w-full max-w-xs rounded-xl bg-secondary p-1">
-        <button
-          onClick={() => onChange("client")}
-          className={cn(
-            "flex-1 rounded-lg py-2 text-sm font-semibold uppercase tracking-wide transition-all",
-            mode === "client"
-              ? "bg-foreground text-background shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          Client View
-        </button>
-        <button
-          onClick={() => onChange("pt")}
-          className={cn(
-            "flex-1 rounded-lg py-2 text-sm font-semibold uppercase tracking-wide transition-all",
-            mode === "pt"
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          PT View
-        </button>
-      </div>
-    </div>
-  )
-}
+  | "live-session"
 
 export default function FitnessApp() {
-  const [appMode, setAppMode] = useState<AppMode>("client")
+  const { user, loading, signOut } = useAuth()
+
   const [currentScreen, setCurrentScreen] = useState<Screen>("welcome")
-  // ID of the scheduled_workouts row the player is logging against. Set when
-  // the user taps a scheduled workout from the dashboard, or when they hit
-  // the Start button in the nav. Cleared on completion or exit.
   const [activeScheduledWorkoutId, setActiveScheduledWorkoutId] = useState<string | null>(null)
   const [activeScheduledWorkoutTitle, setActiveScheduledWorkoutTitle] = useState<string>("")
   const [activeTab, setActiveTab] = useState<NavTab>("home")
   const [ptActiveTab, setPtActiveTab] = useState<NavTab>("pt-clients")
+  const [liveSessionClientId, setLiveSessionClientId] = useState<string | null>(null)
+  const [liveSessionClientName, setLiveSessionClientName] = useState<string>("")
 
-  // Used by the Start button to figure out what the next workout is without
-  // having to drill the data down through the dashboard. For PT users this
-  // returns an empty array. For client users it scopes to their schedule.
   const { data: scheduleData } = useScheduledWorkouts()
 
-  // The "next workout" the Start button should launch: today's if still
-  // scheduled, otherwise the earliest upcoming scheduled workout.
   const nextScheduledWorkout = useMemo(() => {
     const today = new Date()
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`
@@ -83,26 +49,18 @@ export default function FitnessApp() {
     )
   }, [scheduleData])
 
-  const isAuthed = !["welcome", "signin", "signup"].includes(currentScreen)
+  const isAuthed = !!user
+  const isPT = user?.role === "pt"
 
-  const handleModeChange = (mode: AppMode) => {
-    setAppMode(mode)
-    if (mode === "pt") {
-      setCurrentScreen("pt-clients")
-      setPtActiveTab("pt-clients")
-    } else {
-      setCurrentScreen("dashboard")
-      setActiveTab("home")
-    }
-  }
+  // ── Handlers ────────────────────────────────────────────────────────────────
 
-  const handleAuthSubmit = (_data: { email: string; password: string; name?: string }) => {
+  const handleAuthSuccess = () => {
+    // user will be set by AuthProvider via onAuthStateChange.
+    // We set a generic screen — the role-based routing below handles the rest.
     setCurrentScreen("dashboard")
     setActiveTab("home")
   }
 
-  // Called when the client taps a scheduled workout from the dashboard,
-  // or when the Start button is tapped.
   const handleStartScheduledWorkout = (scheduledId: string, title: string) => {
     setActiveScheduledWorkoutId(scheduledId)
     setActiveScheduledWorkoutTitle(title)
@@ -116,11 +74,6 @@ export default function FitnessApp() {
         setCurrentScreen("dashboard")
         break
       case "start":
-        // Start the next workout if there is one. If nothing is scheduled,
-        // stay where we are — the button is essentially a no-op in that case.
-        // (A friendlier future version might show a toast or navigate to
-        // the dashboard; for now silent is fine because the dashboard's
-        // Next Workout CTA already gives visible feedback about scheduling.)
         if (nextScheduledWorkout) {
           handleStartScheduledWorkout(nextScheduledWorkout.id, nextScheduledWorkout.title)
         } else {
@@ -146,7 +99,23 @@ export default function FitnessApp() {
       case "pt-builder":
         setCurrentScreen("pt-builder")
         break
+      case "profile":
+        setCurrentScreen("profile")
+        break
     }
+  }
+
+  const handleStartLiveSession = (clientId: string, clientName: string) => {
+    setLiveSessionClientId(clientId)
+    setLiveSessionClientName(clientName)
+    setCurrentScreen("live-session")
+  }
+
+  const handleExitLiveSession = () => {
+    setCurrentScreen("pt-clients")
+    setPtActiveTab("pt-clients")
+    setLiveSessionClientId(null)
+    setLiveSessionClientName("")
   }
 
   const handleExitWorkout = () => {
@@ -163,52 +132,130 @@ export default function FitnessApp() {
     setActiveScheduledWorkoutTitle("")
   }
 
-  const showBottomNav = ["dashboard", "progress", "profile"].includes(currentScreen)
+  const handleSignOut = async () => {
+    await signOut()
+    setCurrentScreen("welcome")
+  }
 
-  // ── PT Mode ──────────────────────────────────────────────────────────────────
-  if (appMode === "pt" && isAuthed) {
+  // ── Loading ───────────────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <main className="mx-auto flex min-h-screen max-w-md items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        </div>
+      </main>
+    )
+  }
+
+  // ── Not signed in ─────────────────────────────────────────────────────────
+  if (!isAuthed) {
+    if (currentScreen !== "signin" && currentScreen !== "signup") {
+      return (
+        <main className="mx-auto min-h-screen max-w-md bg-background">
+          <WelcomeScreen
+            onGetStarted={() => setCurrentScreen("signup")}
+            onSignIn={() => setCurrentScreen("signin")}
+          />
+        </main>
+      )
+    }
+
     return (
       <main className="mx-auto min-h-screen max-w-md bg-background">
-        <ModeToggle mode={appMode} onChange={handleModeChange} />
+        {currentScreen === "signin" && (
+          <AuthScreen
+            mode="signin"
+            onBack={() => setCurrentScreen("welcome")}
+            onSuccess={handleAuthSuccess}
+            onToggleMode={() => setCurrentScreen("signup")}
+          />
+        )}
+        {currentScreen === "signup" && (
+          <AuthScreen
+            mode="signup"
+            onBack={() => setCurrentScreen("welcome")}
+            onSuccess={handleAuthSuccess}
+            onToggleMode={() => setCurrentScreen("signin")}
+          />
+        )}
+      </main>
+    )
+  }
+
+  // ── Just authenticated — set the right starting screen based on role ──────
+  if (["welcome", "signin", "signup"].includes(currentScreen)) {
+    if (isPT) {
+      setCurrentScreen("pt-clients")
+      setPtActiveTab("pt-clients")
+    } else {
+      setCurrentScreen("dashboard")
+      setActiveTab("home")
+    }
+    return null
+  }
+
+  // ── Profile screen (shared by both roles) ─────────────────────────────────
+  const profileScreen = (
+    <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 pb-24 text-center">
+      <Avatar
+        name={user.displayName}
+        id={user.id}
+        size="h-20 w-20"
+        className="mb-4 ring-2 ring-primary text-2xl"
+      />
+      <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold uppercase text-foreground">
+        {user.displayName}
+      </h1>
+      <p className="mt-1 text-muted-foreground">@{user.username}</p>
+      <p className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">
+        {isPT ? "Personal Trainer" : "Client"}
+      </p>
+      <button
+        onClick={handleSignOut}
+        className="mt-6 rounded-xl bg-secondary px-6 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-secondary/80"
+      >
+        Sign Out
+      </button>
+    </div>
+  )
+
+  // ── PT View ───────────────────────────────────────────────────────────────
+  if (isPT) {
+    // Live session takes over the full screen (no bottom nav)
+    if (currentScreen === "live-session" && liveSessionClientId) {
+      return (
+        <main className="mx-auto min-h-screen max-w-md bg-background">
+          <LiveSessionScreen
+            clientId={liveSessionClientId}
+            clientName={liveSessionClientName}
+            onExit={handleExitLiveSession}
+            onComplete={handleExitLiveSession}
+          />
+        </main>
+      )
+    }
+
+    return (
+      <main className="mx-auto min-h-screen max-w-md bg-background">
         <div className="pb-24">
-          {currentScreen === "pt-clients" && <PTCoachScreen />}
+          {currentScreen === "pt-clients" && (
+            <PTCoachScreen onStartLiveSession={handleStartLiveSession} />
+          )}
           {currentScreen === "pt-builder" && <PTBuilderScreen />}
+          {currentScreen === "profile" && profileScreen}
         </div>
         <BottomNav activeTab={ptActiveTab} onTabChange={handlePTNavigation} ptMode />
       </main>
     )
   }
 
-  // ── Client Mode ───────────────────────────────────────────────────────────────
+  // ── Client View ───────────────────────────────────────────────────────────
+  const showBottomNav = ["dashboard", "progress", "profile"].includes(currentScreen)
+
   return (
     <main className="mx-auto min-h-screen max-w-md bg-background">
-      {isAuthed && <ModeToggle mode={appMode} onChange={handleModeChange} />}
-
-      {currentScreen === "welcome" && (
-        <WelcomeScreen
-          onGetStarted={() => setCurrentScreen("signup")}
-          onSignIn={() => setCurrentScreen("signin")}
-        />
-      )}
-
-      {currentScreen === "signin" && (
-        <AuthScreen
-          mode="signin"
-          onBack={() => setCurrentScreen("welcome")}
-          onSubmit={handleAuthSubmit}
-          onToggleMode={() => setCurrentScreen("signup")}
-        />
-      )}
-
-      {currentScreen === "signup" && (
-        <AuthScreen
-          mode="signup"
-          onBack={() => setCurrentScreen("welcome")}
-          onSubmit={handleAuthSubmit}
-          onToggleMode={() => setCurrentScreen("signin")}
-        />
-      )}
-
       {currentScreen === "dashboard" && (
         <DashboardScreen onStartScheduledWorkout={handleStartScheduledWorkout} />
       )}
@@ -223,22 +270,7 @@ export default function FitnessApp() {
       )}
 
       {currentScreen === "progress" && <ProgressScreen />}
-
-      {currentScreen === "profile" && (
-        <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 pb-24 text-center">
-          <div className="mb-4 h-20 w-20 overflow-hidden rounded-full ring-2 ring-primary">
-            <img
-              src="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=200&q=80"
-              alt="Profile"
-              className="h-full w-full object-cover"
-            />
-          </div>
-          <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold uppercase text-foreground">
-            Alex Johnson
-          </h1>
-          <p className="mt-1 text-muted-foreground">Member since March 2026</p>
-        </div>
-      )}
+      {currentScreen === "profile" && profileScreen}
 
       {showBottomNav && (
         <BottomNav activeTab={activeTab} onTabChange={handleNavigation} />
