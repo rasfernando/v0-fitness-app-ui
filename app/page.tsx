@@ -9,6 +9,7 @@ import { ProgressScreen } from "@/components/fitness/screens/progress-screen"
 import { PTCoachScreen } from "@/components/fitness/screens/pt-coach-screen"
 import { PTBuilderScreen } from "@/components/fitness/screens/pt-builder-screen"
 import { LiveSessionScreen } from "@/components/fitness/screens/live-session-screen"
+import { QuickLogScreen } from "@/components/fitness/screens/quick-log-screen"
 import { BottomNav, type NavTab } from "@/components/fitness/bottom-nav"
 import { useScheduledWorkouts } from "@/lib/hooks/use-scheduled-workouts"
 import { useAuth } from "@/lib/auth"
@@ -22,6 +23,7 @@ type Screen =
   | "workout-player"
   | "progress"
   | "profile"
+  | "quick-log"
   | "pt-clients"
   | "pt-builder"
   | "live-session"
@@ -55,10 +57,9 @@ export default function FitnessApp() {
   // ── Handlers ────────────────────────────────────────────────────────────────
 
   const handleAuthSuccess = () => {
-    // user will be set by AuthProvider via onAuthStateChange.
-    // We set a generic screen — the role-based routing below handles the rest.
-    setCurrentScreen("dashboard")
-    setActiveTab("home")
+    // Don't set a specific screen here — the role-based redirect block
+    // below will route PTs to "pt-clients" and clients to "dashboard"
+    // based on the user's role once the auth state updates.
   }
 
   const handleStartScheduledWorkout = (scheduledId: string, title: string) => {
@@ -72,6 +73,9 @@ export default function FitnessApp() {
     switch (tab) {
       case "home":
         setCurrentScreen("dashboard")
+        break
+      case "log":
+        setCurrentScreen("quick-log")
         break
       case "start":
         if (nextScheduledWorkout) {
@@ -252,7 +256,7 @@ export default function FitnessApp() {
   }
 
   // ── Client View ───────────────────────────────────────────────────────────
-  const showBottomNav = ["dashboard", "progress", "profile"].includes(currentScreen)
+  const showBottomNav = ["dashboard", "progress", "profile", "quick-log"].includes(currentScreen)
 
   return (
     <main className="mx-auto min-h-screen max-w-md bg-background">
@@ -266,6 +270,15 @@ export default function FitnessApp() {
           workoutTitle={activeScheduledWorkoutTitle}
           onExit={handleExitWorkout}
           onComplete={handleCompleteWorkout}
+        />
+      )}
+
+      {currentScreen === "quick-log" && (
+        <QuickLogScreen
+          onSaved={() => {
+            setCurrentScreen("dashboard")
+            setActiveTab("home")
+          }}
         />
       )}
 

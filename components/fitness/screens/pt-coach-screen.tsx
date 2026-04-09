@@ -57,19 +57,23 @@ function AddClientSheet({
 }) {
   const [searchQuery, setSearchQuery] = useState("")
   const [results, setResults] = useState<SearchResult[]>([])
-  const [searching, setSearching] = useState(false)
+  const [searching, setSearching] = useState(true) // true on mount so user sees spinner immediately
+  const [searchError, setSearchError] = useState<string | null>(null)
   const [justAdded, setJustAdded] = useState<Set<string>>(new Set())
   const [addError, setAddError] = useState<string | null>(null)
 
   // Debounced search — fires 300ms after the user stops typing
   useEffect(() => {
+    setSearching(true)
+    setSearchError(null)
     const timer = setTimeout(async () => {
-      setSearching(true)
       try {
         const data = await searchAvailableClients(ptId, searchQuery)
         setResults(data)
-      } catch {
-        // silently fail — leave results empty
+      } catch (err) {
+        console.error("searchAvailableClients failed:", err)
+        setSearchError(err instanceof Error ? err.message : "Search failed")
+        setResults([])
       } finally {
         setSearching(false)
       }
@@ -89,9 +93,9 @@ function AddClientSheet({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col">
+    <div className="fixed inset-0 z-[60] flex flex-col">
       <div className="flex-1 bg-background/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="rounded-t-2xl bg-card shadow-xl">
+      <div className="rounded-t-2xl bg-card shadow-xl pb-8">
         <div className="flex justify-center pt-3">
           <div className="h-1 w-10 rounded-full bg-border" />
         </div>
@@ -108,6 +112,11 @@ function AddClientSheet({
           >
             <X className="h-4 w-4" />
           </button>
+        </div>
+
+        {/* DEBUG BANNER — remove after fixing */}
+        <div className="mx-5 mb-2 rounded-lg bg-blue-500/20 px-3 py-2 text-[10px] font-mono text-blue-300">
+          ptId: {ptId} | results: {results.length} | searching: {String(searching)} | error: {searchError ?? "none"}
         </div>
 
         {addError && (
@@ -128,18 +137,20 @@ function AddClientSheet({
           />
         </div>
 
-        <div className="max-h-80 overflow-y-auto px-5 scrollbar-hide">
+        <div className="max-h-[50vh] overflow-y-auto px-5 pb-safe scrollbar-hide">
           <div className="space-y-2 pb-6">
-            {searching ? (
+            {searchError ? (
+              <div className="py-4 text-center">
+                <p className="text-xs text-destructive">{searchError}</p>
+              </div>
+            ) : searching ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               </div>
             ) : results.length === 0 ? (
               <div className="py-8 text-center">
                 <p className="text-sm text-muted-foreground">
-                  {searchQuery.trim()
-                    ? "No clients found"
-                    : "Type a name to search"}
+                  No clients found
                 </p>
               </div>
             ) : (

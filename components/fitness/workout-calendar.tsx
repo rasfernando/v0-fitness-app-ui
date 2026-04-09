@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { ChevronLeft, ChevronRight, Plus, Dumbbell, Clock, X, Check, Search, Layers, ListChecks } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, Dumbbell, Clock, X, Check, Search, Layers, ListChecks, ChevronDown, ChevronUp } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useExercises, type ExerciseOption } from "@/lib/hooks/use-exercises"
+import { LoggedSetsList } from "@/components/fitness/logged-sets-list"
 
 export interface ScheduledWorkout {
   id: string
@@ -590,6 +591,7 @@ export function WorkoutCalendar({
 
   const selectedDateWorkouts = selectedDate ? workoutsByDate.get(selectedDate) || [] : []
   const selectedDateObj = selectedDate ? new Date(selectedDate + "T00:00:00") : null
+  const [expandedWorkoutId, setExpandedWorkoutId] = useState<string | null>(null)
 
   return (
     <div className="flex flex-col">
@@ -694,18 +696,28 @@ export function WorkoutCalendar({
 
           {selectedDateWorkouts.length > 0 ? (
             <div className="mt-3 space-y-2">
-              {selectedDateWorkouts.map((item) => (
-                <div key={item.id} className="flex items-start gap-3 rounded-xl bg-card p-3">
+              {selectedDateWorkouts.map((item) => {
+                const isExpanded = expandedWorkoutId === item.id
+                const isCompleted = item.status === "completed"
+                return (
+                <div key={item.id} className="rounded-xl bg-card">
+                  <div
+                    className={cn(
+                      "flex items-start gap-3 p-3",
+                      isCompleted && "cursor-pointer transition-colors hover:bg-secondary/50 rounded-xl"
+                    )}
+                    onClick={() => isCompleted && setExpandedWorkoutId(isExpanded ? null : item.id)}
+                  >
                   <div className={cn(
                     "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
-                    item.status === "completed" ? "bg-emerald-500/20"
+                    isCompleted ? "bg-emerald-500/20"
                       : item.status === "missed" ? "bg-red-500/20"
                       : item.type === "single_exercise" ? "bg-primary/10"
                       : "bg-primary/20"
                   )}>
                     {item.type === "single_exercise"
-                      ? <ListChecks className={cn("h-5 w-5", item.status === "completed" ? "text-emerald-400" : "text-primary")} />
-                      : <Dumbbell className={cn("h-5 w-5", item.status === "completed" ? "text-emerald-400" : item.status === "missed" ? "text-red-400" : "text-primary")} />
+                      ? <ListChecks className={cn("h-5 w-5", isCompleted ? "text-emerald-400" : "text-primary")} />
+                      : <Dumbbell className={cn("h-5 w-5", isCompleted ? "text-emerald-400" : item.status === "missed" ? "text-red-400" : "text-primary")} />
                     }
                   </div>
                   <div className="flex-1 min-w-0">
@@ -740,13 +752,20 @@ export function WorkoutCalendar({
                       <X className="h-4 w-4" />
                     </button>
                   )}
-                  {item.status === "completed" && (
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/20">
-                      <Check className="h-3.5 w-3.5 text-emerald-400" />
-                    </span>
+                  {isCompleted && (
+                    isExpanded
+                      ? <ChevronUp className="h-5 w-5 shrink-0 text-emerald-400" />
+                      : <ChevronDown className="h-5 w-5 shrink-0 text-emerald-400" />
+                  )}
+                  </div>
+                  {isExpanded && isCompleted && (
+                    <div className="border-t border-border/50 px-3 pb-3">
+                      <LoggedSetsList scheduledWorkoutId={item.id} />
+                    </div>
                   )}
                 </div>
-              ))}
+                )
+              })}
             </div>
           ) : (
             <div className="mt-4 flex flex-col items-center py-6 text-center">

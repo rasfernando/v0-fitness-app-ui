@@ -365,14 +365,14 @@ function CalendarModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col">
+    <div className="fixed inset-0 z-[60] flex flex-col">
       <div
         className="flex-1 bg-background/60 backdrop-blur-sm"
         onClick={onClose}
       />
       <div
         ref={sheetRef}
-        className="max-h-[85vh] overflow-y-auto overscroll-contain rounded-t-2xl bg-card shadow-xl"
+        className="max-h-[85vh] overflow-y-auto overscroll-contain rounded-t-2xl bg-card shadow-xl pb-8"
       >
         <div className="sticky top-0 z-10 bg-card">
           <div className="flex justify-center pt-3">

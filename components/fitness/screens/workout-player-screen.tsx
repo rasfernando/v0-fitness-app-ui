@@ -237,11 +237,16 @@ export function WorkoutPlayerScreen({
   // ── Navigation ──────────────────────────────────────────────────────────
 
   // Is the current step complete?
-  // For supersets: current round's set is done for current exercise
+  // For supersets: current round's set is done for current exercise.
+  // If the exercise has fewer sets than the block's round count, treat it
+  // as already done for rounds beyond its range (no work to do).
   // For standalone: all sets done
+  const hasNoSetThisRound = isSuperset && currentRound >= currentSets.length
+
   const isCurrentStepDone = useMemo(() => {
     if (!currentExercise) return false
     if (isSuperset) {
+      if (currentRound >= currentSets.length) return true // no set this round — auto-skip
       return currentSets[currentRound]?.isDone === true
     } else {
       return currentSets.length > 0 && currentSets.every((s) => s.isDone)
@@ -604,7 +609,18 @@ export function WorkoutPlayerScreen({
 
           {/* Sets grid */}
           <div className="mt-5 space-y-2">
-            {isSuperset ? (
+            {isSuperset && hasNoSetThisRound ? (
+              /* ── This exercise has fewer sets than the block's round count ── */
+              <div className="flex flex-col items-center justify-center rounded-xl bg-secondary/50 py-8 text-center">
+                <Check className="mb-2 h-6 w-6 text-emerald-500" />
+                <p className="text-sm font-medium text-foreground">
+                  All {currentSets.length} sets complete
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Tap next to continue
+                </p>
+              </div>
+            ) : isSuperset ? (
               /* ── Superset mode: show only the current round's set ──── */
               <>
                 <div className="grid grid-cols-12 gap-2 px-2 text-[10px] font-semibold uppercase text-muted-foreground">

@@ -5,6 +5,7 @@ import { Spinner } from "@/components/ui/spinner"
 
 interface CTAButtonProps {
   children: React.ReactNode
+  type?: "button" | "submit" | "reset"   // ← add this
   variant?: "primary" | "secondary" | "outline"
   size?: "sm" | "md" | "lg"
   fullWidth?: boolean
@@ -16,6 +17,7 @@ interface CTAButtonProps {
 
 export function CTAButton({
   children,
+  type = "button",   // ← add this
   variant = "primary",
   size = "md",
   fullWidth = false,
@@ -38,6 +40,7 @@ export function CTAButton({
 
   return (
     <button
+      type={type}
       onClick={onClick}
       disabled={disabled || loading}
       className={cn(
