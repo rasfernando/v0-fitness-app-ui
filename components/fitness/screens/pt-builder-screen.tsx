@@ -14,6 +14,7 @@ import {
   Loader2,
   ChevronLeft,
   Pencil,
+  ArrowLeftRight,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/lib/auth"
@@ -62,6 +63,21 @@ function formatDifficultyDisplay(d: string): "Beginner" | "Intermediate" | "Adva
   if (d === "beginner") return "Beginner"
   if (d === "advanced") return "Advanced"
   return "Intermediate"
+}
+
+// A superset group with only one member is meaningless — clear it. Called after
+// a delete, since removing the only partner of a 2-row group leaves a lone row
+// still labeled with the group.
+function cleanupLoneSupersets(exercises: FormExercise[]): FormExercise[] {
+  const counts: Record<string, number> = {}
+  for (const ex of exercises) {
+    if (ex.supersetGroup) counts[ex.supersetGroup] = (counts[ex.supersetGroup] || 0) + 1
+  }
+  return exercises.map((ex) =>
+    ex.supersetGroup && counts[ex.supersetGroup] === 1
+      ? { ...ex, supersetGroup: "" }
+      : ex
+  )
 }
 
 // Convert a WorkoutDetailExercise from the hook into a FormExercise for editing
@@ -186,11 +202,13 @@ function ExerciseFormRow({
   index,
   onUpdate,
   onRemove,
+  onSwap,
 }: {
   exercise: FormExercise
   index: number
   onUpdate: (localId: string, field: keyof FormExercise, value: string | number) => void
   onRemove: (localId: string) => void
+  onSwap: (localId: string) => void
 }) {
   return (
     <div className={cn(
@@ -211,8 +229,16 @@ function ExerciseFormRow({
           )}
         </div>
         <button
+          onClick={() => onSwap(exercise.localId)}
+          className="rounded p-1 text-muted-foreground hover:text-primary"
+          aria-label="Swap exercise"
+        >
+          <ArrowLeftRight className="h-4 w-4" />
+        </button>
+        <button
           onClick={() => onRemove(exercise.localId)}
           className="rounded p-1 text-muted-foreground hover:text-destructive"
+          aria-label="Remove exercise"
         >
           <X className="h-4 w-4" />
         </button>
@@ -242,8 +268,17 @@ function ExerciseFormRow({
           </label>
           <input
             type="number"
-            value={exercise.sets}
-            onChange={(e) => onUpdate(exercise.localId, "sets", parseInt(e.target.value) || 0)}
+            value={exercise.sets === 0 ? "" : exercise.sets}
+            onChange={(e) => {
+              const v = e.target.value
+              onUpdate(exercise.localId, "sets", v === "" ? 0 : parseInt(v) || 0)
+            }}
+            onBlur={(e) => {
+              const parsed = parseInt(e.target.value)
+              if (!e.target.value || isNaN(parsed) || parsed < 1) {
+                onUpdate(exercise.localId, "sets", 1)
+              }
+            }}
             className="w-full rounded-lg border border-border bg-input px-2 py-1.5 text-sm text-foreground"
           />
         </div>
@@ -295,6 +330,7 @@ export function PTBuilderScreen() {
   const [editSaving, setEditSaving] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
   const [showEditPicker, setShowEditPicker] = useState(false)
+  const [editSwapLocalId, setEditSwapLocalId] = useState<string | null>(null)
 
   const {
     data: workoutDetail,
@@ -350,7 +386,19 @@ export function PTBuilderScreen() {
   }
 
   const handleEditRemoveExercise = (localId: string) => {
-    setEditExercises((prev) => prev.filter((e) => e.localId !== localId))
+    setEditExercises((prev) => cleanupLoneSupersets(prev.filter((e) => e.localId !== localId)))
+  }
+
+  const handleEditSwapExercise = (exercise: { id: string; name: string; category: string }) => {
+    if (!editSwapLocalId) return
+    setEditExercises((prev) =>
+      prev.map((e) =>
+        e.localId === editSwapLocalId
+          ? { ...e, exerciseId: exercise.id, name: exercise.name, category: exercise.category }
+          : e
+      )
+    )
+    setEditSwapLocalId(null)
   }
 
   const handleEditUpdateExercise = (localId: string, field: keyof FormExercise, value: string | number) => {
@@ -397,6 +445,7 @@ export function PTBuilderScreen() {
   const [category, setCategory] = useState("Full Body")
   const [difficulty, setDifficulty] = useState<"Beginner" | "Intermediate" | "Advanced">("Intermediate")
   const [createExercises, setCreateExercises] = useState<FormExercise[]>([])
+  const [createSwapLocalId, setCreateSwapLocalId] = useState<string | null>(null)
 
   const resetCreateForm = () => {
     setTitle("")
@@ -425,7 +474,19 @@ export function PTBuilderScreen() {
   }
 
   const handleCreateRemoveExercise = (localId: string) => {
-    setCreateExercises((prev) => prev.filter((e) => e.localId !== localId))
+    setCreateExercises((prev) => cleanupLoneSupersets(prev.filter((e) => e.localId !== localId)))
+  }
+
+  const handleCreateSwapExercise = (exercise: { id: string; name: string; category: string }) => {
+    if (!createSwapLocalId) return
+    setCreateExercises((prev) =>
+      prev.map((e) =>
+        e.localId === createSwapLocalId
+          ? { ...e, exerciseId: exercise.id, name: exercise.name, category: exercise.category }
+          : e
+      )
+    )
+    setCreateSwapLocalId(null)
   }
 
   const handleCreateUpdateExercise = (localId: string, field: keyof FormExercise, value: string | number) => {
@@ -694,6 +755,7 @@ export function PTBuilderScreen() {
                           index={index}
                           onUpdate={handleEditUpdateExercise}
                           onRemove={handleEditRemoveExercise}
+                          onSwap={setEditSwapLocalId}
                         />
                       ))}
                     </div>
@@ -808,6 +870,16 @@ export function PTBuilderScreen() {
         />
       )}
 
+      {/* Edit exercise swap picker */}
+      {editSwapLocalId && (
+        <ExercisePickerSheet
+          exercises={exerciseLibrary}
+          loading={exercisesLoading}
+          onSelect={handleEditSwapExercise}
+          onClose={() => setEditSwapLocalId(null)}
+        />
+      )}
+
       {/* ── Create Workout Modal ────────────────────────────────────────── */}
       {showCreateWorkout && (
         <div className="fixed inset-0 z-40 flex flex-col pb-20">
@@ -919,6 +991,7 @@ export function PTBuilderScreen() {
                       index={index}
                       onUpdate={handleCreateUpdateExercise}
                       onRemove={handleCreateRemoveExercise}
+                      onSwap={setCreateSwapLocalId}
                     />
                   ))}
                 </div>
@@ -954,6 +1027,16 @@ export function PTBuilderScreen() {
           loading={exercisesLoading}
           onSelect={handleCreateAddExercise}
           onClose={() => setShowCreatePicker(false)}
+        />
+      )}
+
+      {/* Create exercise swap picker */}
+      {createSwapLocalId && (
+        <ExercisePickerSheet
+          exercises={exerciseLibrary}
+          loading={exercisesLoading}
+          onSelect={handleCreateSwapExercise}
+          onClose={() => setCreateSwapLocalId(null)}
         />
       )}
     </div>
