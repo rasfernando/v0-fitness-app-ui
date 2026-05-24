@@ -57,12 +57,18 @@ $$;
 -- -----------------------------------------------------------------------------
 -- One row per auth.users entry. Created automatically by the handle_new_user
 -- trigger below (see section 12).
+--
+-- `goals` is a free-form jsonb blob holding the user's training preferences.
+-- See the migration that introduced it for the documented schema; in short:
+--   { experience, primary_aim, frequency_per_week, equipment, session_minutes, notes }
+-- All fields optional. Read once per coach session, never queried by sub-field.
 create table profiles (
   id            uuid primary key references auth.users(id) on delete cascade,
   username      text not null unique,
   display_name  text not null,
   avatar_url    text,
   bio           text,
+  goals         jsonb,
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now()
 );

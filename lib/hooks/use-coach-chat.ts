@@ -5,6 +5,9 @@ import { supabase } from "@/lib/supabase/client"
 import { useAuth } from "@/lib/auth"
 import { invalidate } from "@/lib/data-invalidation"
 
+// The mutation marker means "something changed in the DB" — could be
+// scheduling, workouts, OR the user's goals. We refresh all of them.
+
 // Trailing marker the server emits when a tool actually mutated the DB.
 // Stripped from display; triggers an invalidation so other hooks refetch.
 const MUTATED_MARKER = " MUTATED "
@@ -44,7 +47,7 @@ interface UseCoachChatResult {
  * The hook's only job is to render what's there.
  */
 export function useCoachChat(): UseCoachChatResult {
-  const { user } = useAuth()
+  const { user, refreshUser } = useAuth()
   const [messages, setMessages] = useState<CoachMessage[]>([])
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -217,6 +220,10 @@ export function useCoachChat(): UseCoachChatResult {
           // Fire both topics; the cost of a spurious refetch is tiny.
           invalidate("scheduled_workouts")
           invalidate("user_workouts")
+          // Goals might also have been updated via update_goals tool —
+          // refresh the AppUser so the welcome bubble and profile screen
+          // pick up the change without a manual reload.
+          refreshUser().catch((err) => console.warn("refreshUser failed:", err))
         }
       } catch (err) {
         const message =

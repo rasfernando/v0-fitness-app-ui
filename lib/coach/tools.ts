@@ -16,6 +16,17 @@
 
 import type Anthropic from "@anthropic-ai/sdk"
 import type { createServerSupabaseClient } from "@/lib/supabase/server"
+import type { Json } from "@/lib/supabase/database.types"
+import {
+  parseUserGoals,
+  EXPERIENCE_LABELS,
+  PRIMARY_AIM_LABELS,
+  EQUIPMENT_LABELS,
+  type UserGoals,
+  type Experience,
+  type PrimaryAim,
+  type Equipment,
+} from "@/lib/coach/goals-types"
 
 type ServerSupabase = ReturnType<typeof createServerSupabaseClient>
 
@@ -117,6 +128,49 @@ export const COACH_TOOLS: Anthropic.Messages.Tool[] = [
         workout_id: {
           type: "string",
           description: "The workouts.id of the workout to delete.",
+        },
+      },
+    },
+  },
+  {
+    name: "update_goals",
+    description:
+      "Save or update the user's training goals on their profile. Call this when you learn something new about what they want from training (during onboarding) or when they mention a change ('I want to train more often', 'my back is acting up, take it easier'). " +
+      "All fields are optional — pass only what you've learned. Existing values for fields you don't pass are preserved (merge semantics). " +
+      "Returns confirmation of what was saved.",
+    input_schema: {
+      type: "object",
+      properties: {
+        experience: {
+          type: "string",
+          enum: ["beginner", "intermediate", "advanced"],
+          description: "How experienced the user is with strength training.",
+        },
+        primary_aim: {
+          type: "string",
+          enum: ["stronger", "muscle", "general", "lose_weight", "performance", "other"],
+          description: "What they're primarily training for.",
+        },
+        frequency_per_week: {
+          type: "integer",
+          minimum: 1,
+          maximum: 7,
+          description: "How many sessions per week they want to do.",
+        },
+        equipment: {
+          type: "string",
+          enum: ["full_gym", "home_basic", "home_loaded", "bodyweight", "other"],
+          description: "What kit they have access to.",
+        },
+        session_minutes: {
+          type: "integer",
+          minimum: 10,
+          maximum: 240,
+          description: "Typical session length in minutes.",
+        },
+        notes: {
+          type: "string",
+          description: "Free-text notes — injuries, sport-specific goals, anything else relevant. Replaces existing notes when set.",
         },
       },
     },
@@ -274,6 +328,15 @@ interface CustomiseSessionInput {
   changes: CustomiseSessionChange[]
 }
 
+interface UpdateGoalsInput {
+  experience?: Experience
+  primary_aim?: PrimaryAim
+  frequency_per_week?: number
+  equipment?: Equipment
+  session_minutes?: number
+  notes?: string
+}
+
 // ─── Executor ───────────────────────────────────────────────────────────────
 
 export interface ToolExecutionResult {
@@ -306,6 +369,8 @@ export async function executeTool(
         return await runDeleteWorkout(supabase, input as DeleteWorkoutInput)
       case "customise_session":
         return await runCustomiseSession(supabase, input as CustomiseSessionInput)
+      case "update_goals":
+        return await runUpdateGoals(supabase, input as UpdateGoalsInput)
       default:
         return {
           text: `Unknown tool "${toolName}". Tell the user you don't have that capability.`,
@@ -864,6 +929,79 @@ async function runCustomiseSession(
       `Updated ${input.changes.length} exercise${input.changes.length === 1 ? "" : "s"} ` +
       `for the session on ${scheduled.scheduled_date}. ` +
       `Your "${currentWorkout.title}" template is unchanged — this only affects this session.`,
+    mutated: true,
+  }
+}
+
+async function runUpdateGoals(
+  supabase: ServerSupabase,
+  input: UpdateGoalsInput
+): Promise<ToolExecutionResult> {
+  // Anything to save?
+  const candidate: UserGoals = {}
+  if (input.experience !== undefined) candidate.experience = input.experience
+  if (input.primary_aim !== undefined) candidate.primary_aim = input.primary_aim
+  if (input.frequency_per_week !== undefined) candidate.frequency_per_week = input.frequency_per_week
+  if (input.equipment !== undefined) candidate.equipment = input.equipment
+  if (input.session_minutes !== undefined) candidate.session_minutes = input.session_minutes
+  if (input.notes !== undefined) candidate.notes = input.notes
+
+  if (Object.keys(candidate).length === 0) {
+    return {
+      text: "No goal fields provided — nothing to update.",
+      mutated: false,
+    }
+  }
+
+  // Validate via parseUserGoals (drops anything malformed). Keeps the stored
+  // blob clean even if the AI hallucinates a value not in the enum.
+  const sanitised = parseUserGoals(candidate)
+  if (Object.keys(sanitised).length === 0) {
+    return {
+      text: "The provided goal values weren't valid (check the enum options).",
+      mutated: false,
+    }
+  }
+
+  // Merge with existing.
+  const { data: authData } = await supabase.auth.getUser()
+  const userId = authData?.user?.id
+  if (!userId) {
+    return { text: "Auth error: no user on this session.", mutated: false }
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("goals")
+    .eq("id", userId)
+    .single()
+
+  const existing = parseUserGoals(profile?.goals)
+  const merged: UserGoals = { ...existing, ...sanitised }
+
+  // Supabase's generated Json type doesn't accept tight interfaces directly
+  // even though the runtime shape is JSON-safe. Cast via unknown → Json.
+  const { error: updErr } = await supabase
+    .from("profiles")
+    .update({ goals: merged as unknown as Json })
+    .eq("id", userId)
+
+  if (updErr) {
+    return { text: `Failed to save goals: ${updErr.message}`, mutated: false }
+  }
+
+  // Build a human-readable summary of what was saved so the AI can quote it back.
+  const lines: string[] = []
+  if (sanitised.experience) lines.push(`experience: ${EXPERIENCE_LABELS[sanitised.experience]}`)
+  if (sanitised.primary_aim) lines.push(`aim: ${PRIMARY_AIM_LABELS[sanitised.primary_aim]}`)
+  if (sanitised.frequency_per_week)
+    lines.push(`${sanitised.frequency_per_week}× per week`)
+  if (sanitised.equipment) lines.push(`equipment: ${EQUIPMENT_LABELS[sanitised.equipment]}`)
+  if (sanitised.session_minutes) lines.push(`~${sanitised.session_minutes} min per session`)
+  if (sanitised.notes) lines.push(`notes: ${sanitised.notes}`)
+
+  return {
+    text: `Saved to your profile (${lines.join(", ")}).`,
     mutated: true,
   }
 }

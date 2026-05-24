@@ -10,6 +10,7 @@ import {
 } from "react"
 import { supabase } from "@/lib/supabase/client"
 import type { Session } from "@supabase/supabase-js"
+import { parseUserGoals, type UserGoals } from "@/lib/coach/goals-types"
 
 // ── Public types ──────────────────────────────────────────────────────────────
 // Single-user model — no roles. Profile fields come from the profiles table.
@@ -17,6 +18,8 @@ export interface AppUser {
   id: string
   displayName: string
   username: string
+  /** Current training goals (may be empty if user hasn't set them yet). */
+  goals: UserGoals
 }
 
 interface AuthContextValue {
@@ -30,6 +33,9 @@ interface AuthContextValue {
   signUp: (input: SignUpInput) => Promise<void>
   /** Sign out. */
   signOut: () => Promise<void>
+  /** Re-fetch the profile (incl. goals) — call this after a mutation that
+   *  changes profile data, e.g. the coach using update_goals. */
+  refreshUser: () => Promise<void>
 }
 
 export interface SignUpInput {
@@ -56,13 +62,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    let profile: { id: string; display_name: string; username: string } | null = null
+    let profile: { id: string; display_name: string; username: string; goals: unknown } | null = null
     let lastError: string | null = null
 
     for (let attempt = 0; attempt < 5; attempt++) {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, display_name, username")
+        .select("id, display_name, username, goals")
         .eq("id", session.user.id)
         .single()
 
@@ -87,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: profile.id,
         displayName: profile.display_name,
         username: profile.username,
+        goals: parseUserGoals(profile.goals),
       })
     }
 
@@ -159,8 +166,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // onAuthStateChange will fire → loadProfile(null) → setUser(null)
   }, [])
 
+  const refreshUser = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    await loadProfile(session)
+  }, [loadProfile])
+
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )

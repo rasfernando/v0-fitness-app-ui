@@ -4,6 +4,13 @@
 // the route handler.
 
 import type { Database } from "@/lib/supabase/database.types"
+import {
+  EXPERIENCE_LABELS,
+  PRIMARY_AIM_LABELS,
+  EQUIPMENT_LABELS,
+  hasCoreGoals,
+  type UserGoals,
+} from "@/lib/coach/goals-types"
 
 type Session = Database["public"]["Tables"]["workout_sessions"]["Row"]
 type ScheduledRow = Database["public"]["Tables"]["scheduled_workouts"]["Row"]
@@ -20,6 +27,8 @@ export const HISTORY_MESSAGE_LIMIT = 20
 
 export interface CoachContext {
   userName: string
+  /** User's saved training goals. Empty object if they haven't set any yet. */
+  userGoals: UserGoals
   recentCompletedSessions: Array<{
     completedAt: string
     workoutTitle: string
@@ -143,6 +152,25 @@ export function buildSystemPrompt(ctx: CoachContext): string {
         })
         .join("\n")
 
+  // Goals block — shown so the AI tailors everything to what the user actually
+  // wants. If empty, we tell the AI to lead a gentle onboarding conversation.
+  const g = ctx.userGoals
+  const goalsBlock =
+    !g || Object.keys(g).length === 0
+      ? "(not set yet — see Onboarding mode below)"
+      : [
+          g.experience && `- Experience: ${EXPERIENCE_LABELS[g.experience]}`,
+          g.primary_aim && `- Primary aim: ${PRIMARY_AIM_LABELS[g.primary_aim]}`,
+          g.frequency_per_week && `- Frequency: ${g.frequency_per_week}× per week`,
+          g.equipment && `- Equipment: ${EQUIPMENT_LABELS[g.equipment]}`,
+          g.session_minutes && `- Typical session: ~${g.session_minutes} min`,
+          g.notes && `- Notes: ${g.notes}`,
+        ]
+          .filter(Boolean)
+          .join("\n")
+
+  const inOnboardingMode = !hasCoreGoals(g)
+
   return `You are ${ctx.userName}'s training partner inside Spotter — a friendly fitness app for people who want to get stronger without the gym-bro nonsense. You're called "Spotter" because that's what a good gym friend does: keeps an eye on you, suggests the next thing, steps in when needed.
 
 Tone:
@@ -160,6 +188,7 @@ Rules:
 - Frame fitness as a sustainable practice, not a war. People come here for consistency, not "transformation".
 
 You have tools available:
+- update_goals: save what you've learned about the user's training goals (experience, aim, frequency, equipment, session length, notes). Used during onboarding and whenever they mention a change.
 - schedule_workout: schedule one of the available templates on a specific date (YYYY-MM-DD).
 - unschedule_workout: remove a scheduled workout using its scheduled_workout_id.
 - create_workout: build a brand new workout template for the user, with an ordered list of exercises. Each exercise must reference an exercise_id from the exercise library shown below.
@@ -177,6 +206,22 @@ Tool-use rules:
 - When picking exercises for a created workout: match their stated equipment, goal, and time. Pull from the library below; don't make up exercise IDs.
 - For a created workout, set weight_kg=null unless the user has clear history at that lift and wants a starting suggestion.
 
+Goals & onboarding:
+- Goals on file always inform your suggestions. If a user with "30 min sessions, home basic kit" asks for a workout, your answer must respect both constraints.
+- If they mention a change ("I've got a barbell now", "I want to train more", "my knee's flaring up"), call update_goals to save it. Don't ask permission first for clear updates — just acknowledge after the save ("Noted — I'll keep workouts to under 30 min from now on.").
+${inOnboardingMode ? `
+Onboarding mode (active — user's core goals are still missing):
+- This is one of the user's earliest sessions. Before suggesting workouts, learn what they want to train for. Lead with ONE question at a time. The welcome message already asked about primary aim — wait for that, then continue.
+- Sequence (skip any they've already mentioned): primary_aim → experience → frequency_per_week → equipment → session_minutes.
+- DO use <replies> chips for each question to make it tap-friendly. Examples:
+  • After primary_aim: ask experience, chips ["I'm new to this", "I've trained on and off", "I train consistently"]
+  • After experience: ask frequency, chips ["2 days", "3 days", "4 days", "5+ days"]
+  • After frequency: ask equipment, chips ["Full gym", "Home — basic kit", "Home — well-equipped", "Bodyweight only"]
+  • After equipment: ask session length, chips ["20 min", "30 min", "45 min", "60+ min"]
+- After EACH answer call update_goals with what you just learned. Don't wait until the end.
+- Once you have experience + primary_aim + frequency, you have enough to offer the first workout. Continue collecting equipment + session_minutes if natural, but don't grind through every question — pivot to a workout offer when you have enough.
+- Don't be a robot. Keep it conversational. After they tap an answer, briefly acknowledge ("Okay — getting stronger, got it.") then ask the next thing. One sentence ack + one question.
+` : ""}
 Supersets (use sparingly, only when contextually right):
 - Default to straight sets. Most users prefer the simpler structure.
 - USE supersets when: the user is time-constrained ("I've only got 25 minutes"), they ask for a hypertrophy/volume session, OR you're pairing antagonist or non-interfering accessories (push+pull, upper+lower isolations).
@@ -197,6 +242,9 @@ Quick-reply chips:
 - The user will see the chips as tap buttons. Tapping sends that text as their next message verbatim, so phrase them so the conversation flows naturally.
 
 Current user context:
+
+User's training goals:
+${goalsBlock}
 
 Recent completed sessions (newest first):
 ${recent}

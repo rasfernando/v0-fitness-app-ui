@@ -9,9 +9,9 @@ import { ProgressScreen } from "@/components/fitness/screens/progress-screen"
 import { QuickLogScreen } from "@/components/fitness/screens/quick-log-screen"
 import { CoachScreen } from "@/components/fitness/screens/coach-screen"
 import { LibraryScreen } from "@/components/fitness/screens/library-screen"
+import { ProfileScreen } from "@/components/fitness/screens/profile-screen"
 import { BottomNav, type NavTab } from "@/components/fitness/bottom-nav"
 import { useAuth } from "@/lib/auth"
-import { Avatar } from "@/components/fitness/avatar"
 
 type Screen =
   | "welcome"
@@ -136,34 +136,22 @@ export default function FitnessApp() {
     )
   }
 
-  // ── Just authenticated — route to the dashboard ───────────────────────────
+  // ── Just authenticated — route to the Coach ─────────────────────────────
+  // Coach is the primary surface: it greets first-time users, surfaces
+  // suggested next actions, and is where most flows start.
   if (["welcome", "signin", "signup"].includes(currentScreen)) {
-    setCurrentScreen("dashboard")
-    setActiveTab("home")
+    setCurrentScreen("coach")
+    setActiveTab("coach")
     return null
   }
 
-  // ── Profile screen ────────────────────────────────────────────────────────
-  const profileScreen = (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 pb-24 text-center">
-      <Avatar
-        name={user.displayName}
-        id={user.id}
-        size="h-20 w-20"
-        className="mb-4 ring-2 ring-primary text-2xl"
-      />
-      <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-        {user.displayName}
-      </h1>
-      <p className="mt-1 text-muted-foreground">@{user.username}</p>
-      <button
-        onClick={handleSignOut}
-        className="mt-6 rounded-xl bg-secondary px-6 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-secondary/80"
-      >
-        Sign Out
-      </button>
-    </div>
-  )
+  // Route to Coach with a clear conversational opener for goal updates.
+  // We don't pre-fill the input — instead we'll let the next chat turn
+  // surface that intent. Simpler & avoids state-pollution between tabs.
+  const handleUpdateGoalsWithCoach = () => {
+    setCurrentScreen("coach")
+    setActiveTab("coach")
+  }
 
   // ── App view ──────────────────────────────────────────────────────────────
   // Quick Log is reachable from Dashboard but doesn't have its own tab; it
@@ -207,7 +195,12 @@ export default function FitnessApp() {
       {currentScreen === "progress" && <ProgressScreen />}
       {currentScreen === "coach" && <CoachScreen />}
       {currentScreen === "library" && <LibraryScreen />}
-      {currentScreen === "profile" && profileScreen}
+      {currentScreen === "profile" && (
+        <ProfileScreen
+          onSignOut={handleSignOut}
+          onUpdateGoalsWithCoach={handleUpdateGoalsWithCoach}
+        />
+      )}
 
       {showBottomNav && (
         <BottomNav activeTab={activeTab} onTabChange={handleNavigation} />

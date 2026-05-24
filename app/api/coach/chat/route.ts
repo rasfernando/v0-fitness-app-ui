@@ -13,6 +13,7 @@ import {
   summariseExercises,
 } from "@/lib/coach/prompt"
 import { COACH_TOOLS, executeTool } from "@/lib/coach/tools"
+import { parseUserGoals } from "@/lib/coach/goals-types"
 
 // The SDK's MessageParam.content union, narrowed to the block kinds we
 // actually emit from the agent loop (text we wrote, tool_use the model
@@ -68,11 +69,12 @@ export async function POST(request: Request) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name")
+    .select("display_name, goals")
     .eq("id", userId)
     .single()
 
   const userName = profile?.display_name ?? "there"
+  const userGoals = parseUserGoals(profile?.goals)
 
   const { error: persistUserErr } = await supabase
     .from("coach_messages")
@@ -129,6 +131,7 @@ export async function POST(request: Request) {
 
   const ctx = {
     userName,
+    userGoals,
     recentCompletedSessions: summariseSessions(sessions, setsBySession, workoutTitleBySchedId),
     upcomingScheduled: summariseScheduled(scheduled, workoutTitleById, exercisesByWorkoutId),
     availableTemplates: summariseTemplates(workouts),

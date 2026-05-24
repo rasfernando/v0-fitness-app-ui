@@ -4,9 +4,16 @@ import { useEffect, useRef, useState } from "react"
 import { Send, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useCoachChat } from "@/lib/hooks/use-coach-chat"
+import { useAuth } from "@/lib/auth"
+import { hasCoreGoals } from "@/lib/coach/goals-types"
 
 export function CoachScreen() {
   const { messages, sending, error, loadingHistory, send } = useCoachChat()
+  const { user } = useAuth()
+  // First-time users (no goals yet) get an onboarding welcome that asks about
+  // their primary training aim. Returning users without history just see the
+  // generic "what sounds useful?" prompt.
+  const isFirstTime = !hasCoreGoals(user?.goals)
   const [draft, setDraft] = useState("")
   const scrollerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -71,32 +78,50 @@ export function CoachScreen() {
           </div>
         )}
 
-        {isEmpty && (
-          <div className="flex flex-col items-center pt-16 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/15">
-              <Sparkles className="h-6 w-6 text-primary" />
-            </div>
-            <h2 className="mt-4 text-xl font-semibold tracking-tight text-foreground">
-              Say hi
-            </h2>
-            <p className="mt-2 max-w-xs text-sm text-muted-foreground">
-              I can see your scheduled workouts and what you've logged. Ask me
-              what to do today, how to progress, or to swap something out.
-            </p>
-            <div className="mt-6 flex flex-col gap-2 w-full max-w-xs">
-              <SuggestionChip
-                text="What should I do today?"
-                onPick={(t) => setDraft(t)}
-              />
-              <SuggestionChip
-                text="Should I push my bench weight up?"
-                onPick={(t) => setDraft(t)}
-              />
-              <SuggestionChip
-                text="I've got 30 minutes — what should I train?"
-                onPick={(t) => setDraft(t)}
-              />
-            </div>
+        {isEmpty && isFirstTime && (
+          // Brand-new user — lead with goal-eliciting question. Chips become
+          // the user's first real message; the AI then walks them through
+          // experience → frequency → equipment per the onboarding mode in
+          // the system prompt.
+          <div className="space-y-3">
+            <MessageBubble
+              role="assistant"
+              content={
+                `Hi — I'm Spotter, your training partner.\n\n` +
+                `Before I put anything together, what are you mainly hoping to get out of training?`
+              }
+            />
+            <ReplyChips
+              replies={[
+                "Get stronger",
+                "Build muscle",
+                "Stay healthy and fit",
+                "Train for something specific",
+              ]}
+              disabled={sending}
+              onPick={(text) => send(text)}
+            />
+          </div>
+        )}
+
+        {isEmpty && !isFirstTime && (
+          // Returning user with goals already set but no chat history this
+          // session (e.g. just cleared their history, or first message in a
+          // while). Skip the goal questions and go straight to useful actions.
+          <div className="space-y-3">
+            <MessageBubble
+              role="assistant"
+              content={`Welcome back. What's on your mind?`}
+            />
+            <ReplyChips
+              replies={[
+                "What should I do today?",
+                "Plan a week for me",
+                "Build me a workout",
+              ]}
+              disabled={sending}
+              onPick={(text) => send(text)}
+            />
           </div>
         )}
 
@@ -210,24 +235,6 @@ function MessageBubble({
         )}
       </div>
     </div>
-  )
-}
-
-function SuggestionChip({
-  text,
-  onPick,
-}: {
-  text: string
-  onPick: (text: string) => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={() => onPick(text)}
-      className="rounded-xl border border-border bg-secondary/50 px-3 py-2 text-left text-xs text-foreground transition-colors hover:bg-secondary"
-    >
-      {text}
-    </button>
   )
 }
 
