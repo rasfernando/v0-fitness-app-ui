@@ -57,10 +57,13 @@ export function CoachScreen() {
         </div>
       </header>
 
-      {/* Scrollable message area. Reserve room for the input + bottom nav. */}
+      {/* Scrollable message area. The input bar sits fixed at bottom-20 with
+          its own height (~110px), and the bottom nav is below that (~80px).
+          pb-48 reserves enough room so reply chips on the latest assistant
+          message stay above the input bar instead of being hidden under it. */}
       <div
         ref={scrollerRef}
-        className="flex-1 overflow-y-auto px-4 py-4 pb-32"
+        className="flex-1 overflow-y-auto px-4 py-4 pb-48"
       >
         {loadingHistory && (
           <div className="flex justify-center py-8">

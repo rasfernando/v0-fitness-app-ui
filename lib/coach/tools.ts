@@ -87,11 +87,16 @@ export const COACH_TOOLS: Anthropic.Messages.Tool[] = [
               rest_seconds: {
                 type: "integer",
                 minimum: 0,
-                description: "Rest between sets in seconds. Typical: 60 for hypertrophy, 90–180 for strength.",
+                description: "Rest between sets in seconds. Typical: 60 for hypertrophy, 90–180 for strength. For exercises inside a superset, this is the rest AFTER the round, not between paired exercises.",
               },
               notes: {
                 type: "string",
                 description: "Optional per-exercise note (form cue, tempo, etc.).",
+              },
+              superset_group: {
+                type: ["string", "null"],
+                description:
+                  "Optional. Group exercises into a superset by giving them the same letter ('A', 'B', 'C'). Two or more exercises sharing the same letter are performed back-to-back with no rest between them, then the prescribed rest at the end of each round. Use sparingly — see the system prompt guidance. Leave null for straight-set exercises.",
               },
             },
           },
@@ -238,6 +243,7 @@ interface CreateWorkoutExerciseInput {
   weight_kg?: number | null
   rest_seconds: number
   notes?: string | null
+  superset_group?: string | null
 }
 
 interface CreateWorkoutInput {
@@ -512,6 +518,7 @@ async function runCreateWorkout(
     weight_kg: e.weight_kg ?? null,
     rest_seconds: e.rest_seconds,
     notes: e.notes ?? null,
+    superset_group: e.superset_group ?? null,
   }))
 
   const { error: insertExErr } = await supabase
