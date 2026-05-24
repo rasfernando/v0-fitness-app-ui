@@ -486,43 +486,43 @@ insert into exercises (id, name, category, muscle_group, uses_weight, uses_reps,
 
 insert into workouts (id, user_id, title, description, category, difficulty, estimated_duration_minutes, estimated_calories, is_global) values
   ('b0000002-0000-0000-0000-000000000001', null,
-   'Full Body Foundations',
-   'A beginner-friendly full-body session focused on foundational compound movements. Good for a return-from-break week.',
+   'Full-body, gentle start',
+   'A beginner-friendly full-body session built around the basics. Good for a first week back or finding your feet.',
    'Strength', 'beginner', 45, 350, true),
 
   ('b0000002-0000-0000-0000-000000000002', null,
-   'Upper Body Power',
-   'Strength-focused upper body day. Heavy compounds, lower reps, longer rest. Progressive overload is the goal.',
+   'Upper body, heavier feel',
+   'Upper body day with the bigger lifts. Lower reps, longer rests — the goal is steady strength, not chasing a pump.',
    'Strength', 'intermediate', 50, 400, true),
 
   ('b0000002-0000-0000-0000-000000000003', null,
-   'Lower Body Power',
-   'Strength-focused lower body day. Heavy squat and hinge patterns, then accessory work for stability and balance.',
+   'Lower body, heavier feel',
+   'Squat and hinge patterns at lower reps, plus a bit of accessory work. Build slowly — this is the one most people overdo.',
    'Strength', 'intermediate', 55, 450, true),
 
   ('b0000002-0000-0000-0000-000000000004', null,
-   'Push Day (Hypertrophy)',
-   'Volume-focused chest, shoulders and triceps session. Moderate weights, higher reps, shorter rest between sets.',
+   'Push day',
+   'Chest, shoulders and triceps. Moderate weight, more reps, shorter rests — you''ll feel it.',
    'Strength', 'intermediate', 60, 450, true),
 
   ('b0000002-0000-0000-0000-000000000005', null,
-   'Pull Day (Hypertrophy)',
-   'Volume-focused back and biceps session. Mix of vertical and horizontal pulling, plus rear delt and arm work.',
+   'Pull day',
+   'Back and biceps. A mix of pulling from above and in front, plus a bit of rear-shoulder and arm work.',
    'Strength', 'intermediate', 60, 450, true),
 
   ('b0000002-0000-0000-0000-000000000006', null,
-   'Leg Day (Volume)',
-   'Higher-volume leg session with unilateral work. Builds on the power day by adding time under tension and balance.',
+   'Leg day',
+   'Higher-volume legs with some single-leg work. More about time-under-tension than max load.',
    'Strength', 'intermediate', 60, 500, true),
 
   ('b0000002-0000-0000-0000-000000000007', null,
-   'Core & Conditioning',
-   'Short, high-intensity core and cardio session. Good as a standalone or tacked onto the end of another workout.',
+   'Core & easy cardio',
+   'A short core circuit with some easy conditioning. Good on its own or after another session.',
    'Strength', 'beginner', 30, 250, true),
 
   ('b0000002-0000-0000-0000-000000000008', null,
-   'Mobility & Recovery',
-   'Low-intensity mobility flow for rest days, warm-ups, or post-session cooldowns. No equipment needed.',
+   'Stretch & reset',
+   'Low-intensity mobility flow. Rest days, warm-ups, or post-session wind-down. No equipment.',
    'Mobility', 'beginner', 20, 80, true);
 
 

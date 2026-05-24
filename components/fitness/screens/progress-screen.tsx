@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Trophy, TrendingUp, Flame, Dumbbell, ChevronDown, ChevronUp } from "lucide-react"
+import { TrendingUp, Activity, Dumbbell, ChevronDown, ChevronUp, CalendarCheck } from "lucide-react"
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts"
 import { cn } from "@/lib/utils"
 import { useProgressData } from "@/lib/hooks/use-progress-data"
@@ -42,10 +42,10 @@ export function ProgressScreen() {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-lg">
         <div className="px-6 py-4">
-          <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold uppercase text-foreground">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             Progress
           </h1>
-          <p className="text-sm text-muted-foreground">Your training over time</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">How your training has been going</p>
         </div>
       </header>
 
@@ -58,25 +58,25 @@ export function ProgressScreen() {
             <div className="grid grid-cols-2 gap-3">
               <StatTile
                 icon={<Dumbbell className="h-4 w-4" />}
-                label="Total Workouts"
+                label="Total sessions"
                 value={String(data.totalSessionsCompleted)}
                 accent="primary"
               />
               <StatTile
-                icon={<Flame className="h-4 w-4" />}
-                label="Week Streak"
+                icon={<Activity className="h-4 w-4" />}
+                label="Weekly streak"
                 value={String(data.currentStreakWeeks)}
                 accent="orange"
               />
               <StatTile
                 icon={<TrendingUp className="h-4 w-4" />}
-                label="This Week"
+                label="This week"
                 value={String(data.sessionsThisWeek)}
                 accent="primary"
               />
               <StatTile
-                icon={<Trophy className="h-4 w-4" />}
-                label="Sets Logged"
+                icon={<CalendarCheck className="h-4 w-4" />}
+                label="Sets logged"
                 value={String(data.totalSetsLogged)}
                 accent="emerald"
               />
@@ -88,8 +88,8 @@ export function ProgressScreen() {
             <div className="rounded-2xl bg-card p-4">
               <div className="flex items-baseline justify-between">
                 <div>
-                  <h2 className="font-[family-name:var(--font-display)] text-sm font-bold uppercase text-foreground">
-                    Strength Trend
+                  <h2 className="text-sm font-semibold text-foreground">
+                    Strength trend
                   </h2>
                   {data.mainLiftName ? (
                     <p className="text-xs text-muted-foreground">
@@ -169,8 +169,8 @@ export function ProgressScreen() {
 
           {/* Recent activity */}
           <section className="px-6 pt-6">
-            <h2 className="mb-2 font-[family-name:var(--font-display)] text-sm font-bold uppercase text-foreground">
-              Recent Workouts
+            <h2 className="mb-3 text-sm font-semibold text-foreground">
+              Recent sessions
             </h2>
             <div className="space-y-2">
               {data.recentSessions.map((session) => {
@@ -183,8 +183,8 @@ export function ProgressScreen() {
                       }
                       className="flex w-full items-center gap-3 p-3 text-left transition-colors hover:bg-secondary/50 rounded-xl"
                     >
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-500/20">
-                        <Dumbbell className="h-5 w-5 text-emerald-400" />
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                        <Dumbbell className="h-5 w-5 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="truncate font-semibold text-sm text-foreground">
@@ -242,10 +242,10 @@ function StatTile({
       <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg", accentClass)}>
         {icon}
       </div>
-      <p className="mt-2 font-[family-name:var(--font-display)] text-2xl font-bold text-foreground">
+      <p className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
         {value}
       </p>
-      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
     </div>
   )
 }
@@ -262,8 +262,8 @@ function TrendBadge({ history }: { history: { estimatedOneRepMax: number }[] }) 
   return (
     <span
       className={cn(
-        "rounded-full px-2 py-1 text-[10px] font-bold uppercase",
-        isUp ? "bg-emerald-500/15 text-emerald-400" : "bg-muted text-muted-foreground"
+        "rounded-full px-2 py-1 text-[10px] font-semibold",
+        isUp ? "bg-primary/12 text-primary" : "bg-muted text-muted-foreground"
       )}
     >
       {sign}
@@ -278,11 +278,11 @@ function EmptyProgressState() {
       <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
         <TrendingUp className="h-8 w-8 text-primary" />
       </div>
-      <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase text-foreground">
-        No progress yet
+      <h2 className="text-xl font-semibold tracking-tight text-foreground">
+        Nothing to show yet
       </h2>
       <p className="mt-2 max-w-xs text-sm text-muted-foreground">
-        Complete a workout from your dashboard and your progress will start showing up here.
+        Finish a session from your dashboard and the numbers will start filling in here.
       </p>
     </div>
   )

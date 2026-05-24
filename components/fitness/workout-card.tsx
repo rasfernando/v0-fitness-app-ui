@@ -1,6 +1,6 @@
 "use client"
 
-import { Clock, Flame, ChevronRight } from "lucide-react"
+import { Clock, Zap, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface WorkoutCardProps {
@@ -24,10 +24,11 @@ export function WorkoutCard({
   className,
   onClick,
 }: WorkoutCardProps) {
+  // Single accent for the active level, quiet pills for the rest.
   const difficultyColor = {
-    Beginner: "bg-emerald-500/20 text-emerald-400",
-    Intermediate: "bg-primary/20 text-primary",
-    Advanced: "bg-red-500/20 text-red-400",
+    Beginner: "bg-secondary text-muted-foreground",
+    Intermediate: "bg-primary/10 text-primary",
+    Advanced: "bg-secondary text-foreground",
   }
 
   return (
@@ -47,7 +48,7 @@ export function WorkoutCard({
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         
         <span className={cn(
-          "absolute left-3 top-3 rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide",
+          "absolute left-3 top-3 rounded-full px-2.5 py-1 text-[11px] font-medium",
           difficultyColor[difficulty]
         )}>
           {difficulty}
@@ -55,20 +56,20 @@ export function WorkoutCard({
       </div>
       
       <div className="p-4 text-left">
-        <p className="text-xs font-medium uppercase tracking-wider text-primary">
+        <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
           {category}
         </p>
-        <h3 className="mt-1 font-[family-name:var(--font-display)] text-lg font-semibold uppercase leading-tight text-foreground">
+        <h3 className="mt-1 text-lg font-semibold tracking-tight leading-snug text-foreground">
           {title}
         </h3>
-        
+
         <div className="mt-3 flex items-center gap-4 text-sm text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <Clock className="h-4 w-4" />
             {duration}
           </span>
           <span className="flex items-center gap-1.5">
-            <Flame className="h-4 w-4 text-orange-400" />
+            <Zap className="h-4 w-4" />
             {calories}
           </span>
         </div>

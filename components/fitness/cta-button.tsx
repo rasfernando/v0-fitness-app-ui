@@ -44,7 +44,7 @@ export function CTAButton({
       onClick={onClick}
       disabled={disabled || loading}
       className={cn(
-        "relative inline-flex items-center justify-center gap-2 rounded-full font-semibold uppercase tracking-wide transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50",
+        "relative inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50",
         variants[variant],
         sizes[size],
         fullWidth && "w-full",

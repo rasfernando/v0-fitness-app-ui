@@ -55,11 +55,11 @@ export function LibraryScreen({ onBack }: LibraryScreenProps) {
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div>
-          <h1 className="font-[family-name:var(--font-display)] text-lg font-bold uppercase text-foreground leading-tight">
-            Your Library
+          <h1 className="text-lg font-semibold tracking-tight text-foreground leading-tight">
+            Your library
           </h1>
           <p className="text-xs text-muted-foreground">
-            Workouts you (or your coach) built
+            Workouts you and your coach have put together
           </p>
         </div>
       </header>
@@ -110,12 +110,12 @@ function EmptyState() {
       <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/15">
         <Sparkles className="h-6 w-6 text-primary" />
       </div>
-      <h2 className="mt-4 font-[family-name:var(--font-display)] text-xl font-bold uppercase text-foreground">
-        Library's empty
+      <h2 className="mt-4 text-xl font-semibold tracking-tight text-foreground">
+        Nothing here yet
       </h2>
       <p className="mt-2 max-w-xs text-sm text-muted-foreground">
-        Ask your coach to build a workout for you — say something like
-        &ldquo;Build me a 30-minute upper body session.&rdquo;
+        Ask your coach to put a workout together for you — try something like
+        &ldquo;build me a 30-minute upper body session.&rdquo;
       </p>
     </div>
   )

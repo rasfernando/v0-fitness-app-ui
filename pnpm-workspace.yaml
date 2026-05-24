@@ -1,0 +1,7 @@
+# pnpm settings. allowBuilds whitelists packages whose postinstall scripts are
+# permitted to run. pnpm blocks them by default for supply-chain safety.
+#   • sharp — Next.js's image library; needs to install its native libvips
+#   • @tailwindcss/oxide — Tailwind v4's native engine
+allowBuilds:
+  sharp: true
+  '@tailwindcss/oxide': true

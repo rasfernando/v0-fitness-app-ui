@@ -122,7 +122,7 @@ function ExerciseConfigPanel({
           >
             <span className="text-lg leading-none">−</span>
           </button>
-          <span className="w-8 text-center font-[family-name:var(--font-display)] text-2xl font-bold text-foreground">
+          <span className="w-8 text-center text-2xl font-semibold tracking-tight text-foreground">
             {sets}
           </span>
           <button
@@ -221,7 +221,7 @@ function ExerciseConfigPanel({
         </button>
         <button
           onClick={() => onConfirm({ sets, reps, weight, rest })}
-          className="flex-1 rounded-xl bg-primary py-3 text-sm font-bold uppercase tracking-wide text-primary-foreground hover:brightness-110"
+          className="flex-1 rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground transition hover:brightness-105"
         >
           Assign Exercise
         </button>
@@ -324,7 +324,7 @@ function AddSheet({
         {/* Header */}
         <div className="flex items-center justify-between px-5 pb-3 pt-4">
           <div>
-            <h3 className="font-[family-name:var(--font-display)] text-lg font-bold uppercase text-foreground">
+            <h3 className="text-lg font-semibold tracking-tight text-foreground">
               {title}
             </h3>
             <p className="text-xs text-muted-foreground">
@@ -606,7 +606,7 @@ export function WorkoutCalendar({
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
-        <h3 className="font-[family-name:var(--font-display)] text-base font-bold uppercase text-foreground">
+        <h3 className="text-base font-semibold tracking-tight text-foreground">
           {MONTHS[currentMonth]} {currentYear}
         </h3>
         <button
@@ -620,7 +620,7 @@ export function WorkoutCalendar({
       {/* Day Headers */}
       <div className="grid grid-cols-7 px-2">
         {DAYS.map((day) => (
-          <div key={day} className="py-2 text-center text-xs font-medium uppercase text-muted-foreground">
+          <div key={day} className="py-2 text-center text-[11px] font-medium text-muted-foreground">
             {day}
           </div>
         ))}
@@ -681,14 +681,14 @@ export function WorkoutCalendar({
         <div className="mt-4 border-t border-border px-4 pt-4">
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="font-[family-name:var(--font-display)] text-sm font-bold uppercase text-foreground">
+              <h4 className="text-sm font-semibold text-foreground">
                 {selectedDateObj.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}
               </h4>
             </div>
             {!readOnly && !isPast(selectedDateObj) && (
               <button
                 onClick={() => setShowAddSheet(true)}
-                className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold uppercase text-primary-foreground transition-all hover:brightness-110"
+                className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition hover:brightness-105"
               >
                 <Plus className="h-3.5 w-3.5" />
                 Add

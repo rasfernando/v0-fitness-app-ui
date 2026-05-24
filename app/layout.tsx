@@ -1,24 +1,23 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, Oswald } from 'next/font/google'
+import { Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { AuthProvider } from '@/lib/auth'
 import './globals.css'
 
-const inter = Inter({ 
-  subsets: ["latin"],
-  variable: '--font-inter'
-});
-
-const oswald = Oswald({ 
-  subsets: ["latin"],
-  variable: '--font-oswald',
-  weight: ['400', '500', '600', '700']
-});
+// Single typeface, multiple weights. Sentence case throughout.
+// No display font — Inter at 600/700 handles headlines fine and avoids
+// the macho condensed-Oswald look the original had.
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  weight: ['400', '500', '600', '700'],
+})
 
 export const metadata: Metadata = {
-  title: 'FORGE | Elite Fitness Coaching',
-  description: 'Transform your body with personalized training programs from Coach Marcus',
-  generator: 'v0.app',
+  title: 'Spotter — your friendly training partner',
+  description:
+    'A calm, helpful fitness app. Plan sessions, log lifts, and chat with an AI training partner that adapts to how you actually train.',
+  generator: 'spotter',
   icons: {
     icon: [
       {
@@ -39,7 +38,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#141414',
+  themeColor: '#FBF7F2',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -53,10 +52,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${oswald.variable} font-sans antialiased`}>
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+      <body className={`${inter.variable} font-sans antialiased`}>
+        <AuthProvider>{children}</AuthProvider>
         <Analytics />
       </body>
     </html>

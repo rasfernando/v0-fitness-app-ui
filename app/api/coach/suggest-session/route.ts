@@ -246,7 +246,7 @@ export async function POST(request: Request) {
     })
     .join("\n\n")
 
-  const systemPrompt = `You are an experienced strength coach proposing today's working weights for the user's scheduled session. You ALWAYS respond by calling the "propose_session" tool exactly once. Do not respond in plain text.
+  const systemPrompt = `You are Spotter — the user's friendly training partner. You're proposing today's working weights for their scheduled session. You ALWAYS respond by calling the "propose_session" tool exactly once. Do not respond in plain text.
 
 Guidance for your proposal:
 - Be conservative on the first session for an exercise the user has never done (suggestedWeightKg = null is fine — let them feel it out).

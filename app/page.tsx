@@ -183,7 +183,7 @@ export default function FitnessApp() {
         size="h-20 w-20"
         className="mb-4 ring-2 ring-primary text-2xl"
       />
-      <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold uppercase text-foreground">
+      <h1 className="text-2xl font-semibold tracking-tight text-foreground">
         {user.displayName}
       </h1>
       <p className="mt-1 text-muted-foreground">@{user.username}</p>

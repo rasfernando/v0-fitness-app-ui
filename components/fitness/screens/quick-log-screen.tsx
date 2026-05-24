@@ -189,11 +189,11 @@ export function QuickLogScreen({ onSaved }: { onSaved?: () => void }) {
     <div className="flex min-h-screen flex-col px-4 pb-28 pt-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold uppercase tracking-tight text-foreground">
-          Quick Log
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          Quick log
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Log what you did — pick exercises, enter your sets.
+          Log what you did — pick the exercises, enter the sets.
         </p>
       </div>
 
@@ -254,7 +254,7 @@ export function QuickLogScreen({ onSaved }: { onSaved?: () => void }) {
           className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border py-3 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
         >
           <Plus className="h-4 w-4" />
-          Add Exercise
+          Add an exercise
         </button>
       )}
 
@@ -278,10 +278,10 @@ export function QuickLogScreen({ onSaved }: { onSaved?: () => void }) {
           onClick={handleSave}
           disabled={saving || totalSets === 0}
           className={cn(
-            "mt-6 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold uppercase tracking-wider transition-all",
+            "mt-6 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-semibold transition-all",
             saving || totalSets === 0
               ? "bg-secondary text-muted-foreground"
-              : "bg-primary text-primary-foreground shadow-lg shadow-primary/30 hover:scale-[1.02]"
+              : "bg-primary text-primary-foreground hover:brightness-105"
           )}
         >
           {saving ? (

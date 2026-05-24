@@ -53,11 +53,11 @@ export function CoachScreen({ onOpenLibrary }: CoachScreenProps = {}) {
           <Sparkles className="h-4 w-4 text-primary" />
         </div>
         <div className="flex-1">
-          <h1 className="font-[family-name:var(--font-display)] text-lg font-bold uppercase text-foreground leading-tight">
+          <h1 className="text-lg font-semibold tracking-tight text-foreground leading-tight">
             Coach
           </h1>
           <p className="text-xs text-muted-foreground">
-            Asks about your training, suggests progression
+            Your training partner — ask anything
           </p>
         </div>
         {onOpenLibrary && (
@@ -88,12 +88,12 @@ export function CoachScreen({ onOpenLibrary }: CoachScreenProps = {}) {
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/15">
               <Sparkles className="h-6 w-6 text-primary" />
             </div>
-            <h2 className="mt-4 font-[family-name:var(--font-display)] text-xl font-bold uppercase text-foreground">
+            <h2 className="mt-4 text-xl font-semibold tracking-tight text-foreground">
               Say hi
             </h2>
             <p className="mt-2 max-w-xs text-sm text-muted-foreground">
-              I see your scheduled workouts and what you've logged. Ask about
-              progression, swap suggestions, or how to set up your week.
+              I can see your scheduled workouts and what you've logged. Ask me
+              what to do today, how to progress, or to swap something out.
             </p>
             <div className="mt-6 flex flex-col gap-2 w-full max-w-xs">
               <SuggestionChip

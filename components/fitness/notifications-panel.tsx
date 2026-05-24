@@ -47,7 +47,7 @@ export function NotificationsPanel({ open, onClose, onTapNotification }: Notific
           </div>
           <div className="flex items-center justify-between px-5 pb-3 pt-4">
             <div>
-              <h3 className="font-[family-name:var(--font-display)] text-lg font-bold uppercase text-foreground">
+              <h3 className="text-lg font-semibold tracking-tight text-foreground">
                 Notifications
               </h3>
               {unreadCount > 0 && (

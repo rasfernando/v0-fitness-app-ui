@@ -41,13 +41,13 @@ export function ProgrammeCard({
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
         
         {tag && (
-          <span className="absolute left-3 top-3 rounded-full bg-primary px-3 py-1 text-xs font-bold uppercase tracking-wide text-primary-foreground">
+          <span className="absolute left-3 top-3 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
             {tag}
           </span>
         )}
         
         <div className="absolute bottom-0 left-0 right-0 p-4">
-          <h3 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase leading-tight text-foreground">
+          <h3 className="text-xl font-semibold tracking-tight leading-snug text-foreground">
             {title}
           </h3>
         </div>

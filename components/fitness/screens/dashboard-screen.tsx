@@ -2,7 +2,7 @@
 
 // Dashboard screen - fitness app (v2)
 import { useState, useMemo, useEffect, useRef } from "react"
-import { Bell, Flame, Timer, Trophy, TrendingUp, Calendar, ChevronRight, Dumbbell, Clock, Play, BookOpen } from "lucide-react"
+import { Bell, CalendarCheck, Timer, Activity, TrendingUp, Calendar, ChevronRight, Dumbbell, Clock, Play, BookOpen } from "lucide-react"
 import { StatCard } from "@/components/fitness/stat-card"
 import { WorkoutCalendar } from "@/components/fitness/workout-calendar"
 import { CoachSuggestionCard } from "@/components/fitness/coach-suggestion-card"
@@ -102,8 +102,8 @@ export function DashboardScreen({ onStartScheduledWorkout, onOpenLibrary }: Dash
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-lg">
         <div className="flex items-center justify-between px-6 py-4">
           <div>
-            <p className="text-sm text-muted-foreground">{greeting}</p>
-            <h1 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase text-foreground">
+            <p className="text-sm text-muted-foreground">{greeting},</p>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
               {firstName}
             </h1>
           </div>
@@ -134,25 +134,25 @@ export function DashboardScreen({ onStartScheduledWorkout, onOpenLibrary }: Dash
   <section className="px-6 pb-2 pt-2">
     <div className="grid grid-cols-2 gap-3">
       <StatCard
-            label="This Week"
+            label="This week"
             value={String(statsThisWeek)}
-            subtext="workouts"
-            icon={Flame}
+            subtext={statsThisWeek === 1 ? "session" : "sessions"}
+            icon={CalendarCheck}
           />
           <StatCard
-            label="Streak"
+            label="Weekly streak"
             value={String(statsStreak)}
-            subtext={statsStreak === 1 ? "week" : "weeks"}
-            icon={Trophy}
+            subtext={statsStreak === 1 ? "week running" : "weeks running"}
+            icon={Activity}
           />
           <StatCard
-            label="Time Trained"
+            label="Time trained"
             value={statsTimeTrained}
             subtext="this week"
             icon={Timer}
           />
           <StatCard
-            label="Volume"
+            label="Total lifted"
             value={statsVolume}
             subtext="this week"
             icon={TrendingUp}
@@ -171,10 +171,10 @@ export function DashboardScreen({ onStartScheduledWorkout, onOpenLibrary }: Dash
                 <Play className="ml-1 h-7 w-7 text-primary-foreground" />
               </div>
               <div className="flex-1 text-left">
-                <p className="text-xs font-semibold uppercase tracking-wider text-primary">
-                  {nextWorkout.date === todayStr ? "Start Now" : `Up Next — ${formatDate(nextWorkout.date)}`}
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary">
+                  {nextWorkout.date === todayStr ? "Today" : `Next up · ${formatDate(nextWorkout.date)}`}
                 </p>
-                <h3 className="font-[family-name:var(--font-display)] text-lg font-bold uppercase text-foreground">
+                <h3 className="mt-0.5 text-lg font-semibold tracking-tight text-foreground">
                   {nextWorkout.title}
                 </h3>
                 <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
@@ -197,9 +197,9 @@ export function DashboardScreen({ onStartScheduledWorkout, onOpenLibrary }: Dash
               <Dumbbell className="h-7 w-7 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">No workouts scheduled</p>
-              <h3 className="font-[family-name:var(--font-display)] text-lg font-bold uppercase text-foreground">Rest Day</h3>
-              <p className="text-sm text-muted-foreground">Your coach will schedule your next session</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Nothing scheduled</p>
+              <h3 className="mt-0.5 text-lg font-semibold tracking-tight text-foreground">Rest day</h3>
+              <p className="mt-1 text-sm text-muted-foreground">Ask your coach what to do — or take it easy.</p>
             </div>
           </div>
         )}
@@ -307,8 +307,8 @@ export function DashboardScreen({ onStartScheduledWorkout, onOpenLibrary }: Dash
             ) : (
               <div className="flex flex-col items-center py-8 text-center">
                 <Calendar className="h-10 w-10 text-muted-foreground" />
-                <p className="mt-2 text-sm text-muted-foreground">No upcoming workouts scheduled</p>
-                <p className="text-xs text-muted-foreground">Your coach will assign workouts to your calendar</p>
+                <p className="mt-3 text-sm text-foreground">Nothing on the calendar yet</p>
+                <p className="mt-1 text-xs text-muted-foreground">Ask your coach to plan a session for you.</p>
               </div>
             )
           ) : recentCompletedWorkouts.length > 0 ? (
@@ -317,8 +317,8 @@ export function DashboardScreen({ onStartScheduledWorkout, onOpenLibrary }: Dash
                 key={workout.id}
                 className="flex w-full items-center gap-4 rounded-xl bg-card p-4"
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10">
-                  <Flame className="h-6 w-6 text-emerald-400" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                  <CalendarCheck className="h-5 w-5 text-primary" />
                 </div>
                 <div className="flex-1 text-left">
                   <h4 className="font-semibold text-foreground">{workout.title}</h4>
@@ -330,9 +330,9 @@ export function DashboardScreen({ onStartScheduledWorkout, onOpenLibrary }: Dash
             ))
           ) : (
             <div className="flex flex-col items-center py-8 text-center">
-              <Flame className="h-10 w-10 text-muted-foreground" />
-              <p className="mt-2 text-sm text-muted-foreground">No completed workouts yet</p>
-              <p className="text-xs text-muted-foreground">Finish a session to see it here</p>
+              <CalendarCheck className="h-10 w-10 text-muted-foreground" />
+              <p className="mt-3 text-sm text-foreground">No completed sessions yet</p>
+              <p className="mt-1 text-xs text-muted-foreground">Finish a session and it'll show up here.</p>
             </div>
           )}
         </div>
@@ -434,10 +434,10 @@ function CalendarModal({
           </div>
           <div className="flex items-center justify-between px-5 pb-2 pt-4">
             <div>
-              <h3 className="font-[family-name:var(--font-display)] text-lg font-bold uppercase text-foreground">
-                My Schedule
+              <h3 className="text-lg font-semibold tracking-tight text-foreground">
+                Your schedule
               </h3>
-              <p className="text-xs text-muted-foreground">Tap a date to see details</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">Tap a date to see what's planned</p>
             </div>
             <button
               onClick={onClose}

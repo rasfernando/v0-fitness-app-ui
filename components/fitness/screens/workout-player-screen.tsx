@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, useMemo } from "react"
-import { X, Check, ChevronLeft, ChevronRight, ChevronDown, Trophy, Dumbbell, Info, RotateCcw } from "lucide-react"
+import { X, Check, ChevronLeft, ChevronRight, ChevronDown, Dumbbell, Info, RotateCcw } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { CTAButton } from "../cta-button"
 import { useAuth } from "@/lib/auth"
@@ -371,11 +371,11 @@ export function WorkoutPlayerScreen({
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 text-center">
         <Dumbbell className="h-12 w-12 text-muted-foreground" />
-        <h1 className="mt-4 font-[family-name:var(--font-display)] text-xl font-bold uppercase text-foreground">
-          No workout selected
+        <h1 className="mt-4 text-xl font-semibold tracking-tight text-foreground">
+          Nothing to start
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Pick a scheduled workout from your dashboard to start logging.
+          Pick a scheduled workout from your dashboard to begin.
         </p>
         <CTAButton onClick={onExit} className="mt-6">
           Back
@@ -412,29 +412,29 @@ export function WorkoutPlayerScreen({
     )
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 text-center">
-        <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-primary/20">
-          <Trophy className="h-12 w-12 text-primary" />
+        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/15">
+          <Check className="h-10 w-10 text-primary" />
         </div>
-        <h1 className="font-[family-name:var(--font-display)] text-3xl font-bold uppercase text-foreground">
-          Workout Complete!
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+          Session done
         </h1>
-        <p className="mt-2 text-muted-foreground">Great work crushing {workoutTitle}</p>
+        <p className="mt-2 text-muted-foreground">Nicely done — {workoutTitle} is in the books.</p>
 
-        <div className="mt-8 grid w-full max-w-xs grid-cols-3 gap-4">
-          <div className="rounded-xl bg-card p-4">
-            <p className="font-[family-name:var(--font-display)] text-2xl font-bold text-foreground">
+        <div className="mt-8 grid w-full max-w-xs grid-cols-3 gap-3">
+          <div className="rounded-xl bg-card p-4 ring-1 ring-border">
+            <p className="text-2xl font-semibold tracking-tight text-foreground">
               {formatTime(elapsedSeconds)}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">Duration</p>
           </div>
-          <div className="rounded-xl bg-card p-4">
-            <p className="font-[family-name:var(--font-display)] text-2xl font-bold text-foreground">
+          <div className="rounded-xl bg-card p-4 ring-1 ring-border">
+            <p className="text-2xl font-semibold tracking-tight text-foreground">
               {detail.exercises.length}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">Exercises</p>
           </div>
-          <div className="rounded-xl bg-card p-4">
-            <p className="font-[family-name:var(--font-display)] text-2xl font-bold text-primary">
+          <div className="rounded-xl bg-card p-4 ring-1 ring-border">
+            <p className="text-2xl font-semibold tracking-tight text-primary">
               {totalSetsLogged}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">Sets</p>
@@ -488,10 +488,10 @@ export function WorkoutPlayerScreen({
           <X className="h-5 w-5" />
         </button>
         <div className="text-center">
-          <h1 className="font-[family-name:var(--font-display)] text-sm font-bold uppercase text-foreground">
+          <h1 className="text-sm font-semibold tracking-tight text-foreground">
             {workoutTitle}
           </h1>
-          <p className="text-[10px] text-muted-foreground">{formatTime(elapsedSeconds)} · {completedSteps}/{totalSteps} sets</p>
+          <p className="text-[11px] text-muted-foreground">{formatTime(elapsedSeconds)} · {completedSteps}/{totalSteps} sets</p>
         </div>
         <div className="h-9 w-9" />
       </header>
@@ -511,7 +511,7 @@ export function WorkoutPlayerScreen({
           <div className="mb-3 flex items-center gap-2">
             <div className="flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1">
               <RotateCcw className="h-3.5 w-3.5 text-primary" />
-              <span className="text-xs font-bold text-primary uppercase">
+              <span className="text-xs font-semibold tracking-[0.06em] text-primary">
                 Superset {currentBlock.label}
               </span>
             </div>
@@ -540,10 +540,10 @@ export function WorkoutPlayerScreen({
         <div className="rounded-2xl bg-card p-5">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1">
-              <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary">
                 {currentExercise.category ?? "Exercise"}
               </p>
-              <h2 className="mt-1 font-[family-name:var(--font-display)] text-2xl font-bold uppercase text-foreground">
+              <h2 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
                 {currentExercise.name}
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -806,9 +806,9 @@ export function WorkoutPlayerScreen({
               onClick={handleNext}
               disabled={!isCurrentStepDone}
               className={cn(
-                "flex h-12 flex-1 items-center justify-center rounded-xl font-semibold uppercase tracking-wide transition-all",
+                "flex h-12 flex-1 items-center justify-center rounded-xl font-semibold transition-all",
                 isCurrentStepDone
-                  ? "bg-primary text-primary-foreground hover:brightness-110"
+                  ? "bg-primary text-primary-foreground hover:brightness-105"
                   : "bg-secondary text-muted-foreground"
               )}
             >
@@ -824,13 +824,13 @@ export function WorkoutPlayerScreen({
               onClick={handleFinish}
               disabled={!allExercisesComplete || completing}
               className={cn(
-                "flex h-12 flex-1 items-center justify-center rounded-xl font-semibold uppercase tracking-wide transition-all",
+                "flex h-12 flex-1 items-center justify-center rounded-xl font-semibold transition-all",
                 allExercisesComplete && !completing
-                  ? "bg-primary text-primary-foreground hover:brightness-110"
+                  ? "bg-primary text-primary-foreground hover:brightness-105"
                   : "bg-secondary text-muted-foreground"
               )}
             >
-              {completing ? "Saving…" : "Finish workout"}
+              {completing ? "Saving…" : "Finish session"}
             </button>
           )}
         </div>
@@ -840,8 +840,8 @@ export function WorkoutPlayerScreen({
       {showExitConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm px-6">
           <div className="w-full max-w-sm rounded-2xl bg-card p-6 shadow-2xl">
-            <h2 className="font-[family-name:var(--font-display)] text-lg font-bold uppercase text-foreground">
-              Exit workout?
+            <h2 className="text-lg font-semibold tracking-tight text-foreground">
+              Leave this session?
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
               Your logged sets will be saved, but the session won&apos;t be marked as complete.

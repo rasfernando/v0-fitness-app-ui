@@ -57,83 +57,69 @@ export function AuthScreen({ mode, onBack, onSuccess, onToggleMode }: AuthScreen
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Background */}
-      <div className="fixed inset-0 -z-10">
-        <img
-          src="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&auto=format&fit=crop&q=80"
-          alt="Gym background"
-          className="h-full w-full object-cover opacity-20"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/90 to-background" />
-      </div>
-
+    <div className="min-h-[100dvh] bg-background">
       {/* Header */}
-      <header className="flex items-center gap-4 px-6 pt-12">
+      <header className="flex items-center gap-4 px-6 pt-10">
         <button
           onClick={onBack}
+          aria-label="Back"
           className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-foreground transition-colors hover:bg-secondary/80"
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-            <span className="font-[family-name:var(--font-display)] text-sm font-bold text-primary-foreground">
-              F
-            </span>
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+            <span className="text-base font-semibold">s</span>
           </div>
-          <span className="font-[family-name:var(--font-display)] text-lg font-bold uppercase tracking-wider text-foreground">
-            Forge
+          <span className="text-lg font-semibold tracking-tight text-foreground">
+            spotter
           </span>
         </div>
       </header>
 
       {/* Content */}
-      <main className="px-6 pt-12">
+      <main className="px-6 pt-10">
         <div className="mb-8">
-          <h1 className="font-[family-name:var(--font-display)] text-3xl font-bold uppercase text-foreground">
-            {mode === "signin" ? "Welcome Back" : "Create Account"}
+          <h1 className="text-3xl font-semibold text-foreground">
+            {mode === "signin" ? "Welcome back" : "Make an account"}
           </h1>
           <p className="mt-2 text-muted-foreground">
             {mode === "signin"
-              ? "Sign in to continue your fitness journey"
-              : "Join the community and start transforming"}
+              ? "Sign in and we'll pick up where you left off."
+              : "Takes about thirty seconds. Just your name, email, and a password."}
           </p>
         </div>
 
-        {/* Error banner */}
         {error && (
-          <div className="mb-4 flex items-start gap-3 rounded-xl bg-destructive/10 p-4 text-sm text-destructive">
+          <div className="mb-4 flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/8 p-4 text-sm text-destructive">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3">
           {mode === "signup" && (
-            <>
-              <div className="relative">
-                <User className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Full Name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="h-14 w-full rounded-xl bg-input pl-12 pr-4 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                  required
-                />
-              </div>
-            </>
+            <div className="relative">
+              <User className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Your name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="h-14 w-full rounded-xl border border-border bg-input pl-12 pr-4 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+                required
+              />
+            </div>
           )}
 
           <div className="relative">
             <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
             <input
               type="email"
-              placeholder="Email Address"
+              placeholder="Email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="h-14 w-full rounded-xl bg-input pl-12 pr-4 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="h-14 w-full rounded-xl border border-border bg-input pl-12 pr-4 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
               required
             />
           </div>
@@ -145,14 +131,15 @@ export function AuthScreen({ mode, onBack, onSuccess, onToggleMode }: AuthScreen
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="h-14 w-full rounded-xl bg-input pl-12 pr-12 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="h-14 w-full rounded-xl border border-border bg-input pl-12 pr-12 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
               required
               minLength={6}
             />
             <button
               type="button"
+              aria-label={showPassword ? "Hide password" : "Show password"}
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
             >
               {showPassword ? (
                 <EyeOff className="h-5 w-5" />
@@ -165,39 +152,40 @@ export function AuthScreen({ mode, onBack, onSuccess, onToggleMode }: AuthScreen
           {mode === "signin" && (
             <div className="text-right">
               <button type="button" className="text-sm text-primary hover:underline">
-                Forgot Password?
+                Forgot your password?
               </button>
             </div>
           )}
 
           <CTAButton type="submit" fullWidth loading={loading} className="mt-6 h-14">
-            {mode === "signin" ? "Sign In" : "Create Account"}
+            {mode === "signin" ? "Sign in" : "Create account"}
           </CTAButton>
         </form>
 
         {/* Toggle Mode */}
-        <p className="mt-8 text-center text-muted-foreground">
+        <p className="mt-8 text-center text-sm text-muted-foreground">
           {mode === "signin"
             ? "Don't have an account?"
-            : "Already have an account?"}{" "}
+            : "Already have one?"}{" "}
           <button
             onClick={onToggleMode}
-            className="font-semibold text-primary hover:underline"
+            className="font-medium text-primary hover:underline"
           >
-            {mode === "signin" ? "Sign Up" : "Sign In"}
+            {mode === "signin" ? "Sign up" : "Sign in"}
           </button>
         </p>
 
         {mode === "signup" && (
           <p className="mt-6 pb-8 text-center text-xs text-muted-foreground">
-            By signing up, you agree to our{" "}
+            By creating an account you agree to our{" "}
             <button className="text-primary hover:underline">
-              Terms of Service
+              terms
             </button>{" "}
             and{" "}
             <button className="text-primary hover:underline">
-              Privacy Policy
+              privacy policy
             </button>
+            .
           </p>
         )}
       </main>
