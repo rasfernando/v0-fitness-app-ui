@@ -2,13 +2,20 @@
 
 /**
  * Bottom Navigation Component
- * Tab-based navigation for the single-user fitness app.
+ *
+ * Five tabs with Coach as the elevated center button. The product positions
+ * the AI coach as the main interface — everything else (Home, Library,
+ * Progress, Profile) feeds off conversations with it.
+ *
+ * Quick Log is no longer a nav destination; it's surfaced as a card on the
+ * Dashboard instead, since it's a contextual action rather than a primary
+ * surface.
  */
 
-import { Home, ClipboardList, TrendingUp, User, Sparkles } from "lucide-react"
+import { Home, TrendingUp, User, Sparkles, BookOpen } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-export type NavTab = "home" | "start" | "log" | "progress" | "profile" | "coach"
+export type NavTab = "home" | "library" | "coach" | "progress" | "profile"
 
 interface NavItem {
   id: NavTab
@@ -23,11 +30,11 @@ interface BottomNavProps {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: "home", label: "Home", icon: Home, isCenter: false },
+  { id: "home",     label: "Home",     icon: Home,       isCenter: false },
+  { id: "library",  label: "Library",  icon: BookOpen,   isCenter: false },
+  { id: "coach",    label: "Coach",    icon: Sparkles,   isCenter: true  },
   { id: "progress", label: "Progress", icon: TrendingUp, isCenter: false },
-  { id: "log", label: "Log", icon: ClipboardList, isCenter: true },
-  { id: "coach", label: "Coach", icon: Sparkles, isCenter: false },
-  { id: "profile", label: "Profile", icon: User, isCenter: false },
+  { id: "profile",  label: "Profile",  icon: User,       isCenter: false },
 ]
 
 function NavButton({
@@ -50,13 +57,18 @@ function NavButton({
       >
         <div
           className={cn(
-            "flex h-14 w-14 items-center justify-center rounded-full bg-primary shadow-lg shadow-primary/30 transition-transform hover:scale-110",
-            isActive && "ring-2 ring-primary/50 ring-offset-2 ring-offset-background"
+            "flex h-14 w-14 items-center justify-center rounded-full bg-primary shadow-lg shadow-primary/25 transition-transform hover:scale-105",
+            isActive && "ring-2 ring-primary/40 ring-offset-2 ring-offset-background"
           )}
         >
           <Icon className="h-6 w-6 text-primary-foreground" />
         </div>
-        <span className="mt-1 text-xs font-medium text-primary">{item.label}</span>
+        <span className={cn(
+          "mt-1 text-xs font-medium",
+          isActive ? "text-primary" : "text-muted-foreground"
+        )}>
+          {item.label}
+        </span>
       </button>
     )
   }

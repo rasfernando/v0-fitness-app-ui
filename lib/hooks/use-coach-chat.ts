@@ -9,6 +9,10 @@ import { invalidate } from "@/lib/data-invalidation"
 // Stripped from display; triggers an invalidation so other hooks refetch.
 const MUTATED_MARKER = " MUTATED "
 
+// Coach can optionally append a <replies>...</replies> block listing 2–4
+// quick-reply chips. We parse and strip them so the rendered text stays clean.
+const REPLIES_TAG_RE = /<replies>\s*([\s\S]*?)\s*<\/replies>\s*$/i
+
 export interface CoachMessage {
   id: string
   role: "user" | "assistant"
@@ -16,6 +20,9 @@ export interface CoachMessage {
   createdAt: string
   /** True only for the assistant message currently being streamed. */
   streaming?: boolean
+  /** Optional tap-replies suggested by the coach. Present only on assistant
+   *  messages that ended with a <replies> block. */
+  suggestedReplies?: string[]
 }
 
 interface UseCoachChatResult {
@@ -72,14 +79,17 @@ export function useCoachChat(): UseCoachChatResult {
         }
         setMessages(
           (data ?? [])
-            // Filter to user/assistant roles for the UI; we don't render system rows.
             .filter((m) => m.role === "user" || m.role === "assistant")
-            .map((m) => ({
-              id: m.id,
-              role: m.role as "user" | "assistant",
-              content: m.content,
-              createdAt: m.created_at,
-            }))
+            .map((m) => {
+              const { content, replies } = parseReplies(m.content)
+              return {
+                id: m.id,
+                role: m.role as "user" | "assistant",
+                content,
+                createdAt: m.created_at,
+                ...(replies ? { suggestedReplies: replies } : {}),
+              }
+            })
         )
         setLoadingHistory(false)
       })
@@ -107,7 +117,10 @@ export function useCoachChat(): UseCoachChatResult {
       const tempUserId = `local-user-${Date.now()}`
       const tempAssistantId = `local-asst-${Date.now()}`
       setMessages((prev) => [
-        ...prev,
+        // Clear any prior suggestedReplies so old chips don't linger.
+        ...prev.map((m) =>
+          m.suggestedReplies ? { ...m, suggestedReplies: undefined } : m
+        ),
         {
           id: tempUserId,
           role: "user",
@@ -143,7 +156,6 @@ export function useCoachChat(): UseCoachChatResult {
         })
 
         if (!res.ok) {
-          // Try to parse a JSON error; fall back to text.
           let serverMsg = `Coach unavailable (${res.status})`
           try {
             const j = await res.json()
@@ -172,8 +184,10 @@ export function useCoachChat(): UseCoachChatResult {
           if (cancelRef.current) break
           const chunk = decoder.decode(value, { stream: true })
           assembled += chunk
-          // Render the message minus the trailing mutation marker if present.
-          const displayed = stripMutatedMarker(assembled)
+          // Render the message minus the mutation marker and any partial replies block.
+          // We don't show chips until the stream completes — incremental rendering of
+          // <replies> mid-stream would be ugly. Just strip the partial tag for display.
+          const displayed = stripPartialReplies(stripMutatedMarker(assembled))
           setMessages((prev) =>
             prev.map((m) =>
               m.id === tempAssistantId ? { ...m, content: displayed } : m
@@ -181,24 +195,26 @@ export function useCoachChat(): UseCoachChatResult {
           )
         }
 
-        // If the stream ended with the mutation marker, fire invalidation so
-        // the dashboard's useScheduledWorkouts (and any future subscribers)
-        // refetch.
+        // Stream finished. Parse final content for replies + mutation marker.
         const mutated = assembled.endsWith(MUTATED_MARKER)
-        const finalContent = stripMutatedMarker(assembled)
+        const withoutMarker = stripMutatedMarker(assembled)
+        const { content: finalContent, replies } = parseReplies(withoutMarker)
 
         setMessages((prev) =>
           prev.map((m) =>
             m.id === tempAssistantId
-              ? { ...m, content: finalContent, streaming: false }
+              ? {
+                  ...m,
+                  content: finalContent,
+                  streaming: false,
+                  ...(replies ? { suggestedReplies: replies } : {}),
+                }
               : m
           )
         )
 
         if (mutated) {
-          // The marker doesn't tell us WHICH topic changed — the AI may have
-          // scheduled, created, or deleted. Fire both topics; the cost of a
-          // spurious refetch is tiny.
+          // Fire both topics; the cost of a spurious refetch is tiny.
           invalidate("scheduled_workouts")
           invalidate("user_workouts")
         }
@@ -206,7 +222,6 @@ export function useCoachChat(): UseCoachChatResult {
         const message =
           err instanceof Error ? err.message : "Something went wrong."
         setError(message)
-        // Replace the empty streaming placeholder with the error so the user sees it.
         setMessages((prev) =>
           prev.map((m) =>
             m.id === tempAssistantId
@@ -228,10 +243,50 @@ export function useCoachChat(): UseCoachChatResult {
   return { messages, sending, error, loadingHistory, send }
 }
 
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
 /** Remove the server-side mutation marker from a message for display. */
 function stripMutatedMarker(content: string): string {
   if (content.endsWith(MUTATED_MARKER)) {
     return content.slice(0, -MUTATED_MARKER.length).trimEnd()
   }
   return content
+}
+
+/**
+ * Parse trailing <replies>...</replies> block. Returns the cleaned content
+ * (without the tag) and a list of reply lines if the tag was present.
+ */
+function parseReplies(raw: string): { content: string; replies?: string[] } {
+  const match = raw.match(REPLIES_TAG_RE)
+  if (!match) return { content: raw }
+
+  const inner = match[1]
+  const replies = inner
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0 && !line.startsWith("-")) // tolerate `- foo`
+    .map((line) => line.replace(/^-\s*/, ""))
+    .slice(0, 4) // hard-cap to 4
+
+  if (replies.length === 0) return { content: raw.replace(REPLIES_TAG_RE, "").trimEnd() }
+
+  return {
+    content: raw.replace(REPLIES_TAG_RE, "").trimEnd(),
+    replies,
+  }
+}
+
+/**
+ * During streaming, strip a partial <replies> block that may have started but
+ * not yet closed. Otherwise the user sees raw "<replies>" text appear before
+ * the chips render. Once </replies> arrives, full parseReplies takes over.
+ */
+function stripPartialReplies(content: string): string {
+  // If we see <replies> with no closing tag, hide everything from that point.
+  const openIdx = content.lastIndexOf("<replies>")
+  if (openIdx === -1) return content
+  const afterOpen = content.slice(openIdx)
+  if (afterOpen.includes("</replies>")) return content // full block; parseReplies handles
+  return content.slice(0, openIdx).trimEnd()
 }

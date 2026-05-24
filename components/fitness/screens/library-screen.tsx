@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react"
 import {
-  ArrowLeft,
   Calendar as CalendarIcon,
   Trash2,
   ChevronDown,
@@ -29,11 +28,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 
-interface LibraryScreenProps {
-  onBack: () => void
-}
-
-export function LibraryScreen({ onBack }: LibraryScreenProps) {
+export function LibraryScreen() {
   const { data: allWorkouts, loading, error, refetch } = useWorkouts()
 
   // Only the user's own — global system templates aren't shown here.
@@ -45,23 +40,14 @@ export function LibraryScreen({ onBack }: LibraryScreenProps) {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      {/* Header */}
-      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-background/95 px-4 py-4 backdrop-blur-lg">
-        <button
-          onClick={onBack}
-          aria-label="Back"
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-foreground transition-colors hover:bg-secondary/80"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <div>
-          <h1 className="text-lg font-semibold tracking-tight text-foreground leading-tight">
-            Your library
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            Workouts you and your coach have put together
-          </p>
-        </div>
+      {/* Header — tab-resident, no back button */}
+      <header className="sticky top-0 z-30 border-b border-border bg-background/95 px-6 py-5 backdrop-blur-lg">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          Your library
+        </h1>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          Workouts you and your coach have put together
+        </p>
       </header>
 
       <div className="px-4 py-4">

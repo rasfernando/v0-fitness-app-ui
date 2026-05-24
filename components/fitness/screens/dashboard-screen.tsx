@@ -2,7 +2,7 @@
 
 // Dashboard screen - fitness app (v2)
 import { useState, useMemo, useEffect, useRef } from "react"
-import { Bell, CalendarCheck, Timer, Activity, TrendingUp, Calendar, ChevronRight, Dumbbell, Clock, Play, BookOpen } from "lucide-react"
+import { Bell, CalendarCheck, Timer, Activity, TrendingUp, Calendar, ChevronRight, Dumbbell, Clock, Play, ClipboardList } from "lucide-react"
 import { StatCard } from "@/components/fitness/stat-card"
 import { WorkoutCalendar } from "@/components/fitness/workout-calendar"
 import { CoachSuggestionCard } from "@/components/fitness/coach-suggestion-card"
@@ -18,10 +18,10 @@ import { cn } from "@/lib/utils"
 
 interface DashboardScreenProps {
   onStartScheduledWorkout?: (scheduledId: string, title: string) => void
-  onOpenLibrary?: () => void
+  onOpenQuickLog?: () => void
 }
 
-export function DashboardScreen({ onStartScheduledWorkout, onOpenLibrary }: DashboardScreenProps) {
+export function DashboardScreen({ onStartScheduledWorkout, onOpenQuickLog }: DashboardScreenProps) {
   // v3 — no ProgrammeCard, uses nextWorkout
   const [showCalendar, setShowCalendar] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
@@ -215,20 +215,20 @@ export function DashboardScreen({ onStartScheduledWorkout, onOpenLibrary }: Dash
         </section>
       )}
 
-      {/* Browse the user's workout library */}
-      {onOpenLibrary && (
+      {/* Log a session that didn't come from a scheduled workout */}
+      {onOpenQuickLog && (
         <section className="px-6 pt-1">
           <button
-            onClick={onOpenLibrary}
+            onClick={onOpenQuickLog}
             className="group flex w-full items-center justify-between rounded-2xl border border-border bg-card px-4 py-3 transition-colors hover:bg-secondary/40"
           >
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary">
-                <BookOpen className="h-4 w-4 text-muted-foreground" />
+                <ClipboardList className="h-4 w-4 text-muted-foreground" />
               </div>
               <div className="text-left">
-                <p className="text-sm font-semibold text-foreground">Your library</p>
-                <p className="text-xs text-muted-foreground">Workouts you and your coach have built</p>
+                <p className="text-sm font-semibold text-foreground">Log a session</p>
+                <p className="text-xs text-muted-foreground">For a workout you did without one scheduled</p>
               </div>
             </div>
             <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />

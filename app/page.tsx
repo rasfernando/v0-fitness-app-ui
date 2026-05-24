@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState } from "react"
 import { WelcomeScreen } from "@/components/fitness/screens/welcome-screen"
 import { AuthScreen } from "@/components/fitness/screens/auth-screen"
 import { DashboardScreen } from "@/components/fitness/screens/dashboard-screen"
@@ -10,7 +10,6 @@ import { QuickLogScreen } from "@/components/fitness/screens/quick-log-screen"
 import { CoachScreen } from "@/components/fitness/screens/coach-screen"
 import { LibraryScreen } from "@/components/fitness/screens/library-screen"
 import { BottomNav, type NavTab } from "@/components/fitness/bottom-nav"
-import { useScheduledWorkouts } from "@/lib/hooks/use-scheduled-workouts"
 import { useAuth } from "@/lib/auth"
 import { Avatar } from "@/components/fitness/avatar"
 
@@ -33,20 +32,6 @@ export default function FitnessApp() {
   const [activeScheduledWorkoutId, setActiveScheduledWorkoutId] = useState<string | null>(null)
   const [activeScheduledWorkoutTitle, setActiveScheduledWorkoutTitle] = useState<string>("")
   const [activeTab, setActiveTab] = useState<NavTab>("home")
-  // Library can be reached from Coach or Dashboard; remember which so Back returns there.
-  const [libraryReturnTo, setLibraryReturnTo] = useState<"coach" | "dashboard">("dashboard")
-
-  const { data: scheduleData } = useScheduledWorkouts()
-
-  const nextScheduledWorkout = useMemo(() => {
-    const today = new Date()
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`
-    return (
-      scheduleData
-        .filter((w) => w.status === "scheduled" && w.date >= todayStr)
-        .sort((a, b) => a.date.localeCompare(b.date))[0] ?? null
-    )
-  }, [scheduleData])
 
   const isAuthed = !!user
 
@@ -62,28 +47,22 @@ export default function FitnessApp() {
     setCurrentScreen("workout-player")
   }
 
+  // Single source of truth for which tab maps to which screen.
+  // Quick Log is no longer a tab — it's reached via a card on the Dashboard.
   const handleNavigation = (tab: NavTab) => {
     setActiveTab(tab)
     switch (tab) {
       case "home":
         setCurrentScreen("dashboard")
         break
-      case "log":
-        setCurrentScreen("quick-log")
-        break
-      case "start":
-        if (nextScheduledWorkout) {
-          handleStartScheduledWorkout(nextScheduledWorkout.id, nextScheduledWorkout.title)
-        } else {
-          setCurrentScreen("dashboard")
-          setActiveTab("home")
-        }
-        break
-      case "progress":
-        setCurrentScreen("progress")
+      case "library":
+        setCurrentScreen("library")
         break
       case "coach":
         setCurrentScreen("coach")
+        break
+      case "progress":
+        setCurrentScreen("progress")
         break
       case "profile":
         setCurrentScreen("profile")
@@ -108,16 +87,6 @@ export default function FitnessApp() {
   const handleSignOut = async () => {
     await signOut()
     setCurrentScreen("welcome")
-  }
-
-  const handleOpenLibrary = (from: "coach" | "dashboard") => {
-    setLibraryReturnTo(from)
-    setCurrentScreen("library")
-  }
-
-  const handleLeaveLibrary = () => {
-    setCurrentScreen(libraryReturnTo)
-    setActiveTab(libraryReturnTo === "coach" ? "coach" : "home")
   }
 
   // ── Loading ───────────────────────────────────────────────────────────────
@@ -197,14 +166,23 @@ export default function FitnessApp() {
   )
 
   // ── App view ──────────────────────────────────────────────────────────────
-  const showBottomNav = ["dashboard", "progress", "profile", "quick-log", "coach"].includes(currentScreen)
+  // Quick Log is reachable from Dashboard but doesn't have its own tab; it
+  // still shows the nav so the user can leave.
+  const showBottomNav = [
+    "dashboard",
+    "progress",
+    "profile",
+    "quick-log",
+    "coach",
+    "library",
+  ].includes(currentScreen)
 
   return (
     <main className="mx-auto min-h-screen max-w-md bg-background">
       {currentScreen === "dashboard" && (
         <DashboardScreen
           onStartScheduledWorkout={handleStartScheduledWorkout}
-          onOpenLibrary={() => handleOpenLibrary("dashboard")}
+          onOpenQuickLog={() => setCurrentScreen("quick-log")}
         />
       )}
 
@@ -227,12 +205,8 @@ export default function FitnessApp() {
       )}
 
       {currentScreen === "progress" && <ProgressScreen />}
-      {currentScreen === "coach" && (
-        <CoachScreen onOpenLibrary={() => handleOpenLibrary("coach")} />
-      )}
-      {currentScreen === "library" && (
-        <LibraryScreen onBack={handleLeaveLibrary} />
-      )}
+      {currentScreen === "coach" && <CoachScreen />}
+      {currentScreen === "library" && <LibraryScreen />}
       {currentScreen === "profile" && profileScreen}
 
       {showBottomNav && (

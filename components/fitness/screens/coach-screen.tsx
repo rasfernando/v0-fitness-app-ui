@@ -1,16 +1,11 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { Send, Sparkles, BookOpen } from "lucide-react"
+import { Send, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useCoachChat } from "@/lib/hooks/use-coach-chat"
 
-interface CoachScreenProps {
-  /** Open the user's workout library. */
-  onOpenLibrary?: () => void
-}
-
-export function CoachScreen({ onOpenLibrary }: CoachScreenProps = {}) {
+export function CoachScreen() {
   const { messages, sending, error, loadingHistory, send } = useCoachChat()
   const [draft, setDraft] = useState("")
   const scrollerRef = useRef<HTMLDivElement>(null)
@@ -60,16 +55,6 @@ export function CoachScreen({ onOpenLibrary }: CoachScreenProps = {}) {
             Your training partner — ask anything
           </p>
         </div>
-        {onOpenLibrary && (
-          <button
-            onClick={onOpenLibrary}
-            aria-label="Open your workout library"
-            className="flex h-9 items-center gap-1.5 rounded-full bg-secondary px-3 text-xs font-semibold text-foreground transition-colors hover:bg-secondary/80"
-          >
-            <BookOpen className="h-4 w-4" />
-            Library
-          </button>
-        )}
       </header>
 
       {/* Scrollable message area. Reserve room for the input + bottom nav. */}
@@ -114,9 +99,31 @@ export function CoachScreen({ onOpenLibrary }: CoachScreenProps = {}) {
 
         {messages.length > 0 && (
           <div className="space-y-3">
-            {messages.map((m) => (
-              <MessageBubble key={m.id} role={m.role} content={m.content} streaming={m.streaming} />
-            ))}
+            {messages.map((m, idx) => {
+              const isLatestAssistant =
+                m.role === "assistant" && idx === messages.length - 1
+              const showChips =
+                isLatestAssistant &&
+                !m.streaming &&
+                !!m.suggestedReplies?.length
+
+              return (
+                <div key={m.id} className="space-y-2">
+                  <MessageBubble
+                    role={m.role}
+                    content={m.content}
+                    streaming={m.streaming}
+                  />
+                  {showChips && (
+                    <ReplyChips
+                      replies={m.suggestedReplies!}
+                      disabled={sending}
+                      onPick={(text) => send(text)}
+                    />
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
 
@@ -218,5 +225,41 @@ function SuggestionChip({
     >
       {text}
     </button>
+  )
+}
+
+/**
+ * Tappable quick-reply chips shown below the latest assistant message.
+ * Tapping a chip sends the text as the user's next message immediately —
+ * no edit step. Keeps the conversation moving fast.
+ */
+function ReplyChips({
+  replies,
+  disabled,
+  onPick,
+}: {
+  replies: string[]
+  disabled?: boolean
+  onPick: (text: string) => void
+}) {
+  return (
+    <div className="flex flex-wrap gap-2 pl-1">
+      {replies.map((reply, i) => (
+        <button
+          key={`${i}-${reply}`}
+          type="button"
+          onClick={() => onPick(reply)}
+          disabled={disabled}
+          className={cn(
+            "rounded-full border border-primary/30 bg-primary/8 px-3.5 py-1.5 text-xs font-medium text-primary transition-colors",
+            disabled
+              ? "opacity-60"
+              : "hover:border-primary/50 hover:bg-primary/15"
+          )}
+        >
+          {reply}
+        </button>
+      ))}
+    </div>
   )
 }
